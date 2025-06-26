@@ -105,16 +105,25 @@ BACKUP_FILE="${API_VALUES_FILE}.backup.$(date +%Y%m%d-%H%M%S)"
 echo "📦 Backing up API values file to: $BACKUP_FILE"
 cp "$API_VALUES_FILE" "$BACKUP_FILE"
 
-# Update API values file
+# Create Kubernetes secret for database password
+echo "🔐 Creating Kubernetes secret for database password..."
+kubectl create secret generic api-db-secret \
+    --from-literal=password="$DB_PASSWORD" \
+    --namespace=default \
+    --dry-run=client -o yaml | kubectl apply -f -
+
+echo "✅ Database secret created/updated in Kubernetes"
+
+# Update API values file (without password)
 echo "📝 Updating API values file..."
 
-# Use sed to update only the database configuration lines
+# Use sed to update only the database configuration lines (excluding password)
 sed -i.bak \
     -e "s|host:.*|host: \"$DB_HOST\"|" \
     -e "s|port:.*|port: $DB_PORT|" \
     -e "s|name:.*|name: \"$DB_DATABASE\"|" \
     -e "s|user:.*|user: \"$DB_USER\"|" \
-    -e "s|password:.*|password: \"$DB_PASSWORD\"|" \
+    -e "s|password:.*|password: \"\" # Set via secret|" \
     "$API_VALUES_FILE"
 
 echo "✅ API values file updated successfully!"
@@ -125,12 +134,14 @@ echo "🗄️  Database Host: $DB_HOST"
 echo "🚪 Database Port: $DB_PORT"
 echo "👤 Database User: $DB_USER"
 echo "💾 Database Name: $DB_DATABASE"
+echo "🔐 Password Secret: api-db-secret (in Kubernetes)"
 echo "📜 CA Certificate: $CA_CERT_FILE"
 echo "📝 Values File: $API_VALUES_FILE"
 echo "📦 Backup File: $BACKUP_FILE"
 echo ""
 echo "🎉 Database setup completed successfully!"
 echo "💡 Next steps:"
-echo "   1. Commit the updated values file to git"
+echo "   1. Commit the updated values file to git (password is now secure!)"
 echo "   2. Deploy/sync the API application in ArgoCD"
-echo "   3. The CA certificate is available at: $CA_CERT_FILE" 
+echo "   3. The CA certificate is available at: $CA_CERT_FILE"
+echo "   4. Password is stored securely in Kubernetes secret: api-db-secret" 
