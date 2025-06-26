@@ -8,3 +8,4 @@ infrastructure/kubeconfig*
 terraform.tfvars
 db-password.txt
 ca.pem
+cloudflare-config.txt
