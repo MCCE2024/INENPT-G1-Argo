@@ -12,7 +12,7 @@ fullnameOverride: ""
 serviceAccount:
   create: false
   annotations: {}
-  name: ""
+  name: "defaultdb"
 
 podAnnotations: {}
 
@@ -23,21 +23,21 @@ securityContext: {}
 # Service configuration
 service:
   type: ClusterIP
-  port: 3000
+  port: 21699
   targetPort: 3000
 
 # External Database configuration (Aiven Cloud)
 database:
-  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.b.aivencloud.com"
+  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.g.aivencloud.com"
   port: 21699
   name: "defaultdb"
   user: "avnadmin"
-  password: "" # Will be set via secret
+  password: "AVNS_gczKRiWpG0fGKWK4DoA"
   ssl: "require"
 
 # Application configuration
 app:
-  port: 3000
+  port: 21699
   nodeEnv: "production"
   logLevel: "info"
 
