@@ -73,8 +73,8 @@ spec:
           httpGet:
             path: /health
             port: http
-          initialDelaySeconds: 5
-          periodSeconds: 5
+          initialDelaySeconds: 10
+          periodSeconds: 30
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -141,14 +141,22 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: consumer-service
+              app.kubernetes.io/name: consumer
       ports:
         - protocol: TCP
           port: 3000
     - from:
         - podSelector:
             matchLabels:
-              app: producer-service
+              app.kubernetes.io/name: producer
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Allow API to connect to itself (for health checks and internal calls)
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "api.selectorLabels" . | nindent 14 }}
       ports:
         - protocol: TCP
           port: 3000
