@@ -4,10 +4,10 @@ metadata:
   name: producer
   namespace: argocd
   annotations:
-    # Enable automatic image updates
+    # Enable automatic image updates with digest strategy
     argocd-image-updater.argoproj.io/image-list: producer=ghcr.io/mcce2024/argo-g1-producer:latest
-    argocd-image-updater.argoproj.io/write-back-method: git
-    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/producer.update-strategy: digest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
 spec:
   project: default
   source:
