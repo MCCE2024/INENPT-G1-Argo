@@ -12,7 +12,7 @@ fullnameOverride: ""
 serviceAccount:
   create: false
   annotations: {}
-  name: "defaultdb"
+  name: ""
 
 podAnnotations: {}
 
@@ -23,7 +23,7 @@ securityContext: {}
 # Service configuration
 service:
   type: ClusterIP
-  port: 21699
+  port: 3000
   targetPort: 3000
 
 # External Database configuration (Aiven Cloud)
@@ -37,7 +37,7 @@ database:
 
 # Application configuration
 app:
-  port: 21699
+  port: 3000
   nodeEnv: "production"
   logLevel: "info"
 

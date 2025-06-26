@@ -118,12 +118,13 @@ echo "✅ Database secret created/updated in Kubernetes"
 echo "📝 Updating API values file..."
 
 # Use sed to update only the database configuration lines (excluding password)
+# Target only lines within the database section
 sed -i.bak \
-    -e "s|host:.*|host: \"$DB_HOST\"|" \
-    -e "s|port:.*|port: $DB_PORT|" \
-    -e "s|name:.*|name: \"$DB_DATABASE\"|" \
-    -e "s|user:.*|user: \"$DB_USER\"|" \
-    -e "s|password:.*|password: \"\" # Set via secret|" \
+    -e "/^database:/,/^[^ ]/ { s|  host:.*|  host: \"$DB_HOST\"|; }" \
+    -e "/^database:/,/^[^ ]/ { s|  port:.*|  port: $DB_PORT|; }" \
+    -e "/^database:/,/^[^ ]/ { s|  name:.*|  name: \"$DB_DATABASE\"|; }" \
+    -e "/^database:/,/^[^ ]/ { s|  user:.*|  user: \"$DB_USER\"|; }" \
+    -e "/^database:/,/^[^ ]/ { s|  password:.*|  password: \"\" # Set via secret|; }" \
     "$API_VALUES_FILE"
 
 echo "✅ API values file updated successfully!"
