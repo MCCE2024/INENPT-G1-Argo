@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  # Enable more frequent repository polling (every 30 seconds instead of default 3 minutes)
+  timeout.reconciliation: "30s"
+
+  # Reduce hard reconciliation timeout for faster updates
+  timeout.hard.reconciliation: "0s"
+
+  # Enable automatic refresh of applications
+  application.instanceLabelKey: argocd.argoproj.io/instance
+
+  # Server settings
+  server.rbac.log.enforce.enable: "false"
+  statusbadge.enabled: "false"
+
+  # No credentials needed for public repositories
+  # Public repos are automatically accessible
+
+  # Global application sync policy
+  policy.default: |
+    p, role:admin, applications, *, */*, allow
+    p, role:admin, clusters, *, *, allow
+    p, role:admin, repositories, *, *, allow
+    g, argocd-admins, role:admin
+
+---
+# To apply this configuration:
+# kubectl patch configmap argocd-cm -n argocd --patch "$(cat argocd-sync-config.yaml | grep -A 20 'data:' | tail -n +2)"
+
+# Or apply directly:
+# kubectl apply -f argocd-sync-config.yaml
+
+# Restart ArgoCD server to pick up changes:
+# kubectl rollout restart deployment argocd-server -n argocd
