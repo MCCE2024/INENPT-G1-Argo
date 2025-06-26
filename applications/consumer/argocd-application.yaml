@@ -4,10 +4,10 @@ metadata:
   name: consumer
   namespace: argocd
   annotations:
-    # Enable automatic image updates
+    # Enable automatic image updates with digest strategy
     argocd-image-updater.argoproj.io/image-list: consumer=ghcr.io/mcce2024/argo-g1-consumer:latest
-    argocd-image-updater.argoproj.io/write-back-method: git
-    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/consumer.update-strategy: digest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
 spec:
   project: default
   source:
