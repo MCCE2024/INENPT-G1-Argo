@@ -22,7 +22,7 @@ securityContext: {}
 
 # Tenant configuration
 tenant:
-  name: "tenant-a" # Will be overridden per deployment
+  name: "test-tenant" # Will be overridden per deployment
   port: 30000 # Will be overridden per deployment
 
 # Service configuration
