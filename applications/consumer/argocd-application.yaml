@@ -17,7 +17,7 @@ spec:
     helm:
       values: |
         tenant:
-          name: "tenant-a"
+          name: "test-tenant"
           port: 30000
         github:
           clientId: ""  # Will be set via secret
