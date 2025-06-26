@@ -1,5 +1,5 @@
 token
-infrastructure/kubeconfig.yaml
+infrastructure/kubeconfig*
 # OpenTofu files
 *.tfstate
 *.tfstate.*
@@ -7,3 +7,4 @@ infrastructure/kubeconfig.yaml
 .terraform.lock.hcl
 terraform.tfvars
 db-password.txt
+ca.pem

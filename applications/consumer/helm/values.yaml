@@ -2,12 +2,9 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/mcce2024/akkt1-g1-consumer
-  pullPolicy: IfNotPresent
+  repository: ghcr.io/mcce2024/argo-g1-consumer
+  pullPolicy: Always
   tag: "latest"
-
-imagePullSecrets:
-  - name: ghcr-secret
 
 nameOverride: ""
 fullnameOverride: ""
