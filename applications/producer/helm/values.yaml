@@ -29,7 +29,7 @@ startingDeadlineSeconds: 100
 
 # API configuration
 api:
-  url: "http://api-service:3000"
+  url: "http://api-service:80"
   timeout: 30
 
 # GitHub OAuth configuration
