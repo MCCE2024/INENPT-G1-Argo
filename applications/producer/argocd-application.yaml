@@ -12,7 +12,7 @@ spec:
     helm:
       values: |
         api:
-          url: "http://api-service:3000"
+          url: "http://api-service:80"
           timeout: 30
         github:
           token: ""  # Leave empty here; set via secret in the cluster
