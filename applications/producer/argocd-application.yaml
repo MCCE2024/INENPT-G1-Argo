@@ -19,7 +19,7 @@ spec:
         environment: "prod"
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: test-tenant
   syncPolicy:
     automated:
       prune: true
