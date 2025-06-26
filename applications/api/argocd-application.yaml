@@ -26,12 +26,12 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
     retry:
       limit: 5
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 3m
-      - PrunePropagationPolicy=foreground
-      - PruneLast=true
   revisionHistoryLimit: 10
