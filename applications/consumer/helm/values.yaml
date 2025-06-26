@@ -38,7 +38,7 @@ github:
 
 # API configuration
 api:
-  baseUrl: "http://api-service:3000"
+  baseUrl: "http://api-service:80"
 
 # Session configuration
 session:
