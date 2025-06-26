@@ -12,12 +12,14 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path = "${path.module}/kubeconfig.yaml"
+  config_path            = "${path.module}/kubeconfig.yaml"
+  insecure               = true
 }
 
 provider "helm" {
   kubernetes {
-    config_path = "${path.module}/kubeconfig.yaml"
+    config_path            = "${path.module}/kubeconfig.yaml"
+    insecure               = true
   }
 }
 
