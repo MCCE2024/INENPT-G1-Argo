@@ -21,7 +21,7 @@ spec:
           secret: ""  # Will be set via secret
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: test-tenant
   syncPolicy:
     automated:
       prune: true

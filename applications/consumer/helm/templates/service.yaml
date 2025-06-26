@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "consumer.fullname" . }}
+  labels:
+    {{- include "consumer.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+      {{- if and (eq .Values.service.type "NodePort") .Values.tenant.port }}
+      nodePort: {{ .Values.tenant.port }}
+      {{- end }}
+  selector:
+    {{- include "consumer.selectorLabels" . | nindent 4 }} 
