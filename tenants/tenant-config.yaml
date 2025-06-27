@@ -1,0 +1,55 @@
+# Multi-Tenant Configuration
+# This file defines all tenants and their specific configurations
+
+tenants:
+  - name: "tenant-a"
+    namespace: "tenant-a"
+    displayName: "Tenant A"
+    nodePort: 30000
+    domain: "mcce.uname.at"
+    github:
+      appName: "MCCE Tenant A"
+      # OAuth credentials will be set via secrets
+    database:
+      name: "defaultdb"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+
+  - name: "tenant-b"
+    namespace: "tenant-b"
+    displayName: "Tenant B"
+    nodePort: 30001
+    domain: "mcce.uname.at"
+    github:
+      appName: "MCCE Tenant B"
+    database:
+      name: "defaultdb"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+
+  - name: "tenant-c"
+    namespace: "tenant-c"
+    displayName: "Tenant C"
+    nodePort: 30002
+    domain: "mcce.uname.at"
+    github:
+      appName: "MCCE Tenant C"
+    database:
+      name: "defaultdb"
+    resources:
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+      requests:
+        cpu: "500m"
+        memory: "512Mi"

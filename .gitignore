@@ -7,5 +7,7 @@ infrastructure/kubeconfig*
 .terraform.lock.hcl
 terraform.tfvars
 db-password.txt
-ca.pem
-cloudflare-config.txt
+scripts/ca.pem
+scripts/cloudflare-config.txt
+scripts/db-password.txt
+scripts/kubeconfig*

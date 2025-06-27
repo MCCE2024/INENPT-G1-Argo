@@ -28,7 +28,7 @@ service:
 
 # External Database configuration (Aiven Cloud)
 database:
-  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.g.aivencloud.com"
+  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.h.aivencloud.com"
   port: 21699
   name: "defaultdb"
   user: "avnadmin"

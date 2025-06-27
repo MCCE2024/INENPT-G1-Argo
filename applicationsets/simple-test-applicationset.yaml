@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: simple-test
+  namespace: argocd
+spec:
+  goTemplate: false
+  generators:
+    - list:
+        elements:
+          - tenant: "tenant-a"
+            namespace: "tenant-a"
+            app: "api"
+            path: "applications/api/helm"
+  template:
+    metadata:
+      name: "{{tenant}}-{{app}}"
+      labels:
+        tenant: "{{tenant}}"
+        app: "{{app}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
+        targetRevision: main
+        path: "{{path}}"
+        helm:
+          values: |
+            tenant:
+              name: "{{tenant}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
