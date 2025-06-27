@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "api.fullname" . }}
-  namespace: test-tenant
   labels:
     {{- include "api.labels" . | nindent 4 }}
 spec:
@@ -51,7 +50,7 @@ spec:
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ include "api.fullname" . }}-db-secret
+              name: api-db-secret
               key: password
         - name: DB_SSL
           value: {{ .Values.database.ssl | quote }}
@@ -92,7 +91,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: api-service
-  namespace: test-tenant
   labels:
     app: api-service
     component: api
@@ -110,7 +108,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: api-service-account
-  namespace: test-tenant
   labels:
     app: api-service
     component: api
@@ -119,7 +116,6 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: api-service-network-policy
-  namespace: test-tenant
   labels:
     app: api-service
     component: api

@@ -6,62 +6,119 @@ metadata:
 spec:
   goTemplate: false
   generators:
-    - matrix:
-        generators:
-          # Generate for each tenant
-          - list:
-              elements:
-                - tenant: "tenant-a"
-                  namespace: "tenant-a"
-                  displayName: "Tenant A"
-                  nodePort: "30000"
-                  domain: "mcce.uname.at"
-                  resources:
-                    limits:
-                      cpu: "500m"
-                      memory: "512Mi"
-                    requests:
-                      cpu: "200m"
-                      memory: "256Mi"
-                - tenant: "tenant-b"
-                  namespace: "tenant-b"
-                  displayName: "Tenant B"
-                  nodePort: "30001"
-                  domain: "mcce.uname.at"
-                  resources:
-                    limits:
-                      cpu: "500m"
-                      memory: "512Mi"
-                    requests:
-                      cpu: "200m"
-                      memory: "256Mi"
-                - tenant: "tenant-c"
-                  namespace: "tenant-c"
-                  displayName: "Tenant C"
-                  nodePort: "30002"
-                  domain: "mcce.uname.at"
-                  resources:
-                    limits:
-                      cpu: "1000m"
-                      memory: "1Gi"
-                    requests:
-                      cpu: "500m"
-                      memory: "512Mi"
-          # Generate for each application type with specific configs
-          - list:
-              elements:
-                - app: "api"
-                  path: "applications/api/helm"
-                  serviceType: "ClusterIP"
-                  hasNodePort: "false"
-                - app: "consumer"
-                  path: "applications/consumer/helm"
-                  serviceType: "NodePort"
-                  hasNodePort: "true"
-                - app: "producer"
-                  path: "applications/producer/helm"
-                  serviceType: "ClusterIP"
-                  hasNodePort: "false"
+    - list:
+        elements:
+          # Tenant A applications
+          - tenant: "tenant-a"
+            namespace: "tenant-a"
+            displayName: "Tenant A"
+            nodePort: "30000"
+            domain: "mcce.uname.at"
+            app: "api"
+            path: "applications/api/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "500m"
+            memoryLimit: "512Mi"
+            cpuRequest: "200m"
+            memoryRequest: "256Mi"
+          - tenant: "tenant-a"
+            namespace: "tenant-a"
+            displayName: "Tenant A"
+            nodePort: "30000"
+            domain: "mcce.uname.at"
+            app: "consumer"
+            path: "applications/consumer/helm"
+            serviceType: "NodePort"
+            cpuLimit: "500m"
+            memoryLimit: "512Mi"
+            cpuRequest: "200m"
+            memoryRequest: "256Mi"
+          - tenant: "tenant-a"
+            namespace: "tenant-a"
+            displayName: "Tenant A"
+            nodePort: "30000"
+            domain: "mcce.uname.at"
+            app: "producer"
+            path: "applications/producer/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "500m"
+            memoryLimit: "512Mi"
+            cpuRequest: "200m"
+            memoryRequest: "256Mi"
+          # Tenant B applications
+          - tenant: "tenant-b"
+            namespace: "tenant-b"
+            displayName: "Tenant B"
+            nodePort: "30001"
+            domain: "mcce.uname.at"
+            app: "api"
+            path: "applications/api/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "500m"
+            memoryLimit: "512Mi"
+            cpuRequest: "200m"
+            memoryRequest: "256Mi"
+          - tenant: "tenant-b"
+            namespace: "tenant-b"
+            displayName: "Tenant B"
+            nodePort: "30001"
+            domain: "mcce.uname.at"
+            app: "consumer"
+            path: "applications/consumer/helm"
+            serviceType: "NodePort"
+            cpuLimit: "500m"
+            memoryLimit: "512Mi"
+            cpuRequest: "200m"
+            memoryRequest: "256Mi"
+          - tenant: "tenant-b"
+            namespace: "tenant-b"
+            displayName: "Tenant B"
+            nodePort: "30001"
+            domain: "mcce.uname.at"
+            app: "producer"
+            path: "applications/producer/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "500m"
+            memoryLimit: "512Mi"
+            cpuRequest: "200m"
+            memoryRequest: "256Mi"
+          # Tenant C applications
+          - tenant: "tenant-c"
+            namespace: "tenant-c"
+            displayName: "Tenant C"
+            nodePort: "30002"
+            domain: "mcce.uname.at"
+            app: "api"
+            path: "applications/api/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "1000m"
+            memoryLimit: "1Gi"
+            cpuRequest: "500m"
+            memoryRequest: "512Mi"
+          - tenant: "tenant-c"
+            namespace: "tenant-c"
+            displayName: "Tenant C"
+            nodePort: "30002"
+            domain: "mcce.uname.at"
+            app: "consumer"
+            path: "applications/consumer/helm"
+            serviceType: "NodePort"
+            cpuLimit: "1000m"
+            memoryLimit: "1Gi"
+            cpuRequest: "500m"
+            memoryRequest: "512Mi"
+          - tenant: "tenant-c"
+            namespace: "tenant-c"
+            displayName: "Tenant C"
+            nodePort: "30002"
+            domain: "mcce.uname.at"
+            app: "producer"
+            path: "applications/producer/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "1000m"
+            memoryLimit: "1Gi"
+            cpuRequest: "500m"
+            memoryRequest: "512Mi"
   template:
     metadata:
       name: "{{tenant}}-{{app}}"
@@ -85,18 +142,19 @@ spec:
               name: "{{tenant}}"
               port: {{nodePort}}
 
-            # Service configuration - conditional based on app type
+            # Service configuration
             service:
+              type: "{{serviceType}}"
               nodePort: {{nodePort}}
 
             # Resource configuration
             resources:
               limits:
-                cpu: "{{resources.limits.cpu}}"
-                memory: "{{resources.limits.memory}}"
+                cpu: "{{cpuLimit}}"
+                memory: "{{memoryLimit}}"
               requests:
-                cpu: "{{resources.requests.cpu}}"
-                memory: "{{resources.requests.memory}}"
+                cpu: "{{cpuRequest}}"
+                memory: "{{memoryRequest}}"
 
             # API configuration
             api:
