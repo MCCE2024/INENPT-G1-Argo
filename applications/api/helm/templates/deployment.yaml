@@ -39,6 +39,8 @@ spec:
           value: {{ .Values.app.port | quote }}
         - name: NODE_ENV
           value: {{ .Values.app.nodeEnv | quote }}
+        - name: TENANT_ID
+          value: {{ .Values.env.TENANT_ID | quote }}
         - name: DB_HOST
           value: {{ .Values.database.host | quote }}
         - name: DB_PORT
