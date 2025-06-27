@@ -1,0 +1,114 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: multi-tenant-stack
+  namespace: argocd
+spec:
+  goTemplate: false
+  generators:
+    - matrix:
+        generators:
+          # Generate for each tenant
+          - list:
+              elements:
+                - tenant: "tenant-a"
+                  namespace: "tenant-a"
+                  displayName: "Tenant A"
+                  nodePort: "30000"
+                  domain: "mcce.uname.at"
+                  resources:
+                    limits:
+                      cpu: "500m"
+                      memory: "512Mi"
+                    requests:
+                      cpu: "200m"
+                      memory: "256Mi"
+                - tenant: "tenant-b"
+                  namespace: "tenant-b"
+                  displayName: "Tenant B"
+                  nodePort: "30001"
+                  domain: "mcce.uname.at"
+                  resources:
+                    limits:
+                      cpu: "500m"
+                      memory: "512Mi"
+                    requests:
+                      cpu: "200m"
+                      memory: "256Mi"
+                - tenant: "tenant-c"
+                  namespace: "tenant-c"
+                  displayName: "Tenant C"
+                  nodePort: "30002"
+                  domain: "mcce.uname.at"
+                  resources:
+                    limits:
+                      cpu: "1000m"
+                      memory: "1Gi"
+                    requests:
+                      cpu: "500m"
+                      memory: "512Mi"
+          # Generate for each application type with specific configs
+          - list:
+              elements:
+                - app: "api"
+                  path: "applications/api/helm"
+                  serviceType: "ClusterIP"
+                  hasNodePort: "false"
+                - app: "consumer"
+                  path: "applications/consumer/helm"
+                  serviceType: "NodePort"
+                  hasNodePort: "true"
+                - app: "producer"
+                  path: "applications/producer/helm"
+                  serviceType: "ClusterIP"
+                  hasNodePort: "false"
+  template:
+    metadata:
+      name: "{{tenant}}-{{app}}"
+      labels:
+        tenant: "{{tenant}}"
+        app: "{{app}}"
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: "{{app}}=ghcr.io/mcce2024/argo-g1-{{app}}:latest"
+        argocd-image-updater.argoproj.io/{{app}}.update-strategy: digest
+        argocd-image-updater.argoproj.io/write-back-method: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
+        targetRevision: main
+        path: "{{path}}"
+        helm:
+          values: |
+            # Tenant-specific configuration
+            tenant:
+              name: "{{tenant}}"
+              port: {{nodePort}}
+
+            # Service configuration - conditional based on app type
+            service:
+              nodePort: {{nodePort}}
+
+            # Resource configuration
+            resources:
+              limits:
+                cpu: "{{resources.limits.cpu}}"
+                memory: "{{resources.limits.memory}}"
+              requests:
+                cpu: "{{resources.requests.cpu}}"
+                memory: "{{resources.requests.memory}}"
+
+            # API configuration
+            api:
+              baseUrl: "http://{{tenant}}-api-service:80"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+  syncPolicy:
+    preserveResourcesOnDeletion: false
