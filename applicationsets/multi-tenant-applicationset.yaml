@@ -158,7 +158,7 @@ spec:
 
             # API configuration
             api:
-              baseUrl: "http://{{tenant}}-api-service:80"
+              baseUrl: "http://api-service:80"
 
             # Environment variables
             env:
