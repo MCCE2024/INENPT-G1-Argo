@@ -1,12 +1,24 @@
 # INENPT-G1-Argo: Our GitOps Learning Journey
 
-> **Welcome to our learning journey!** 👋  
-> This repository documents what we (Harald, Patrick, and Susanne) learned while building a complete cloud-native microservices application with **Helm**, **ArgoCD**, and **GitOps**. We're sharing our discoveries, challenges, and insights to help other students understand modern cloud computing concepts.
+## 🧭 Repository Navigation Guide
 
-> [!IMPORTANT]
-> **Course Requirements Met**: This project satisfies all course requirements including 3+ services, OAuth2 authentication, no-click setup, Kubernetes deployment, multi-tenancy, and security-first design.
+**For Students Learning Cloud Computing:**
 
-## 📋 Table of Contents
+1. Start Here: [INENPT-G1-Code](https://github.com/MCCE2024/INENPT-G1-Code) – Application development and microservices
+2. Next: [INENPT-G1-K8s](https://github.com/MCCE2024/INENPT-G1-K8s) – Kubernetes deployment and scaling
+3. Finally: [INENPT-G1-Argo](https://github.com/MCCE2024/INENPT-G1-Argo) – GitOps infrastructure and automation (**this repo**)
+
+**For Professors Evaluating:**
+- Requirements Coverage: See below
+- Application Architecture: See below
+- Code Examples: See below
+
+**For Developers Contributing:**
+- Local Setup: See below
+- Build Process: See below
+- Development Workflow: See below
+
+## �� Table of Contents
 
 - [🎯 What We Built](#-what-we-built-a-complete-cloud-native-system)
 - [✅ Course Requirements](#-course-requirements-how-we-met-every-criterion)
@@ -180,9 +192,9 @@ Our project was designed to meet specific course requirements. Here's how we sat
 │  │                                                                     │   │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │   │
 │  │  │   ARGOCD    │  │   HELM      │  │  TERRAFORM  │  │   SECRETS   │ │   │
-│  │  │             │  │             │  │             │  │             │   │
-│  │  │ • GitOps    │  │ • Charts    │  │ • IaC       │  │ • Database  │ │   │
-│  │  │ • Sync      │  │ • Values    │  │ • Cluster   │  │ • OAuth2    │ │   │
+│  │  │             │  │ • Charts    │  │ • IaC       │  │ • Database  │ │   │
+│  │  │ • GitOps    │  │ • Values    │  │ • Cluster   │  │ • OAuth2    │ │   │
+│  │  │ • Sync      │  │ • Templates │  │ • ArgoCD    │  │ • SSL Certs │ │   │
 │  │  │ • UI        │  │ • Templates │  │ • ArgoCD    │  │ • SSL Certs │ │   │
 │  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
