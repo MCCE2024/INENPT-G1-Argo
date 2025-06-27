@@ -1,5 +1,8 @@
 # INENPT-G1-Argo: Our GitOps Learning Journey
 
+> **Part 3 of 3: Argo CD** 🏗️  
+> This repository contains the **Infrastructure as Code (IaC)** components (GitOps infrastructure and automation) of our multi-tenant cloud-native application. It's designed to work seamlessly with our [Application Code Repository](https://github.com/MCCE2024/INENPT-G1-Code) and [Infrastructure as Code Repository](https://github.com/MCCE2024/INENPT-G1-K8s) to create a complete GitOps pipeline.
+
 ## 🧭 Repository Navigation Guide
 
 **For Students Learning Cloud Computing:**
