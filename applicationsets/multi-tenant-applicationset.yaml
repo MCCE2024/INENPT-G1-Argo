@@ -159,6 +159,10 @@ spec:
             # API configuration
             api:
               baseUrl: "http://{{tenant}}-api-service:80"
+
+            # Environment variables
+            env:
+              TENANT_ID: "{{tenant}}"
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{namespace}}"
