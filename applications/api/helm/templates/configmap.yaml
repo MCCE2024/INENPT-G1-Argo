@@ -1,0 +1,11 @@
+{{- if .Values.database.caCert }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.database.caCertConfigMap | default "ca-certificate" }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+data:
+  ca.pem: |
+{{ .Values.database.caCert | indent 4 }}
+{{- end }} 
