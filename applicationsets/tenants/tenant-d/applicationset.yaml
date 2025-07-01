@@ -1,0 +1,102 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-d-applications
+  namespace: argocd
+spec:
+  goTemplate: false
+  generators:
+    - list:
+        elements:
+          # Tenant D applications
+          - tenant: "tenant-d"
+            namespace: "tenant-d"
+            displayName: "Tenant D"
+            nodePort: "30003"
+            domain: "mcce.uname.at"
+            app: "api"
+            path: "applications/api/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "1000m"
+            memoryLimit: "1Gi"
+            cpuRequest: "500m"
+            memoryRequest: "512Mi"
+          - tenant: "tenant-d"
+            namespace: "tenant-d"
+            displayName: "Tenant D"
+            nodePort: "30003"
+            domain: "mcce.uname.at"
+            app: "consumer"
+            path: "applications/consumer/helm"
+            serviceType: "NodePort"
+            cpuLimit: "1000m"
+            memoryLimit: "1Gi"
+            cpuRequest: "500m"
+            memoryRequest: "512Mi"
+          - tenant: "tenant-d"
+            namespace: "tenant-d"
+            displayName: "Tenant D"
+            nodePort: "30003"
+            domain: "mcce.uname.at"
+            app: "producer"
+            path: "applications/producer/helm"
+            serviceType: "ClusterIP"
+            cpuLimit: "1000m"
+            memoryLimit: "1Gi"
+            cpuRequest: "500m"
+            memoryRequest: "512Mi"
+  template:
+    metadata:
+      name: "{{tenant}}-{{app}}"
+      labels:
+        tenant: "{{tenant}}"
+        app: "{{app}}"
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: "{{app}}=ghcr.io/mcce2024/argo-g1-{{app}}:latest"
+        argocd-image-updater.argoproj.io/{{app}}.update-strategy: digest
+        argocd-image-updater.argoproj.io/write-back-method: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
+        targetRevision: main
+        path: "{{path}}"
+        helm:
+          values: |
+            # Tenant-specific configuration
+            tenant:
+              name: "{{tenant}}"
+              port: {{nodePort}}
+
+            # Service configuration
+            service:
+              type: "{{serviceType}}"
+              nodePort: {{nodePort}}
+
+            # Resource configuration
+            resources:
+              limits:
+                cpu: "{{cpuLimit}}"
+                memory: "{{memoryLimit}}"
+              requests:
+                cpu: "{{cpuRequest}}"
+                memory: "{{memoryRequest}}"
+
+            # API configuration
+            api:
+              baseUrl: "http://api-service:80"
+
+            # Environment variables
+            env:
+              TENANT_ID: "{{tenant}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+  syncPolicy:
+    preserveResourcesOnDeletion: false
