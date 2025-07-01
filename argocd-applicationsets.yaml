@@ -10,8 +10,8 @@ spec:
     targetRevision: main
     path: applicationsets
     directory:
-      recurse: true
-      include: "*.yaml"
+      recurse: false
+      include: "master-applicationset.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

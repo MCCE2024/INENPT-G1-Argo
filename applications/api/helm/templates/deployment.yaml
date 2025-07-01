@@ -56,10 +56,17 @@ spec:
               key: password
         - name: DB_SSL
           value: {{ .Values.database.ssl | quote }}
+        - name: DB_CA_CERT_PATH
+          value: "/etc/ssl/certs/ca.pem"
         {{- with .Values.securityContext }}
         securityContext:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+        volumeMounts:
+        - name: ca-certificate
+          mountPath: /etc/ssl/certs/ca.pem
+          subPath: ca.pem
+          readOnly: true
         {{- with .Values.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
@@ -76,6 +83,13 @@ spec:
             port: http
           initialDelaySeconds: 10
           periodSeconds: 30
+      volumes:
+      - name: ca-certificate
+        configMap:
+          name: {{ .Values.database.caCertConfigMap | default "ca-certificate" }}
+          items:
+          - key: ca.pem
+            path: ca.pem
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

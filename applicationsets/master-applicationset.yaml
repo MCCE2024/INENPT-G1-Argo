@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-applicationsets-master
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1" # Deploy this first, before tenant applications
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
+        revision: main
+        directories:
+          - path: applicationsets/tenants/*
+  template:
+    metadata:
+      name: "{{path.basename}}-applicationset"
+      labels:
+        tenant: "{{path.basename}}"
+        type: "tenant-applicationset"
+      annotations:
+        argocd.argoproj.io/sync-wave: "0" # Deploy tenant ApplicationSets after master
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
+        targetRevision: main
+        path: "{{path}}"
+        directory:
+          recurse: false
+          include: "applicationset.yaml"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

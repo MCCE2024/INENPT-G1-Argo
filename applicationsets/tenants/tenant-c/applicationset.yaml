@@ -1,91 +1,13 @@
-# DEPRECATED: This file has been split into individual tenant ApplicationSets
-# See: applicationsets/tenants/tenant-*/applicationset.yaml
-# Managed by: applicationsets/master-applicationset.yaml
-
-# apiVersion: argoproj.io/v1alpha1
-# kind: ApplicationSet
-# metadata:
-#   name: multi-tenant-stack
-#   namespace: argocd
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-c-applications
+  namespace: argocd
 spec:
   goTemplate: false
   generators:
     - list:
         elements:
-          # Tenant A applications
-          - tenant: "tenant-a"
-            namespace: "tenant-a"
-            displayName: "Tenant A"
-            nodePort: "30000"
-            domain: "mcce.uname.at"
-            app: "api"
-            path: "applications/api/helm"
-            serviceType: "ClusterIP"
-            cpuLimit: "500m"
-            memoryLimit: "512Mi"
-            cpuRequest: "200m"
-            memoryRequest: "256Mi"
-          - tenant: "tenant-a"
-            namespace: "tenant-a"
-            displayName: "Tenant A"
-            nodePort: "30000"
-            domain: "mcce.uname.at"
-            app: "consumer"
-            path: "applications/consumer/helm"
-            serviceType: "NodePort"
-            cpuLimit: "500m"
-            memoryLimit: "512Mi"
-            cpuRequest: "200m"
-            memoryRequest: "256Mi"
-          - tenant: "tenant-a"
-            namespace: "tenant-a"
-            displayName: "Tenant A"
-            nodePort: "30000"
-            domain: "mcce.uname.at"
-            app: "producer"
-            path: "applications/producer/helm"
-            serviceType: "ClusterIP"
-            cpuLimit: "500m"
-            memoryLimit: "512Mi"
-            cpuRequest: "200m"
-            memoryRequest: "256Mi"
-          # Tenant B applications
-          - tenant: "tenant-b"
-            namespace: "tenant-b"
-            displayName: "Tenant B"
-            nodePort: "30001"
-            domain: "mcce.uname.at"
-            app: "api"
-            path: "applications/api/helm"
-            serviceType: "ClusterIP"
-            cpuLimit: "500m"
-            memoryLimit: "512Mi"
-            cpuRequest: "200m"
-            memoryRequest: "256Mi"
-          - tenant: "tenant-b"
-            namespace: "tenant-b"
-            displayName: "Tenant B"
-            nodePort: "30001"
-            domain: "mcce.uname.at"
-            app: "consumer"
-            path: "applications/consumer/helm"
-            serviceType: "NodePort"
-            cpuLimit: "500m"
-            memoryLimit: "512Mi"
-            cpuRequest: "200m"
-            memoryRequest: "256Mi"
-          - tenant: "tenant-b"
-            namespace: "tenant-b"
-            displayName: "Tenant B"
-            nodePort: "30001"
-            domain: "mcce.uname.at"
-            app: "producer"
-            path: "applications/producer/helm"
-            serviceType: "ClusterIP"
-            cpuLimit: "500m"
-            memoryLimit: "512Mi"
-            cpuRequest: "200m"
-            memoryRequest: "256Mi"
           # Tenant C applications
           - tenant: "tenant-c"
             namespace: "tenant-c"

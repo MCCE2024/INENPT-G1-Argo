@@ -94,6 +94,34 @@ else
     exit 1
 fi
 
+# Update values.yaml with CA certificate content
+echo "🔐 Adding CA certificate content to values.yaml..."
+
+# Create a temporary file with the CA certificate content properly indented
+TEMP_CERT_FILE=$(mktemp)
+cat "$CA_CERT_FILE" | sed 's/^/    /' > "$TEMP_CERT_FILE"
+
+# Create a new values file with the CA certificate content
+TEMP_VALUES_FILE=$(mktemp)
+
+# Process the values file line by line
+while IFS= read -r line; do
+    echo "$line" >> "$TEMP_VALUES_FILE"
+    # If we find the caCert: | line, append the certificate content
+    if [[ "$line" == *"caCert: |"* ]]; then
+        cat "$TEMP_CERT_FILE" >> "$TEMP_VALUES_FILE"
+    fi
+done < "$API_VALUES_FILE"
+
+# Replace the original file
+mv "$TEMP_VALUES_FILE" "$API_VALUES_FILE"
+
+# Clean up temporary files
+rm -f "$TEMP_CERT_FILE"
+
+echo "✅ CA certificate content added to values.yaml"
+echo "💡 The Helm template will now create ConfigMaps automatically when deployed"
+
 # Check if API values file exists
 if [ ! -f "$API_VALUES_FILE" ]; then
     echo "❌ Error: API values file not found: $API_VALUES_FILE"
