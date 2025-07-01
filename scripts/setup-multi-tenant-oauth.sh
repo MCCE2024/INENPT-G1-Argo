@@ -6,7 +6,46 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TENANT_CONFIG="$SCRIPT_DIR/../tenants/tenant-config.yaml"
+APPLICATIONSETS_DIR="$SCRIPT_DIR/../applicationsets/tenants"
+
+# Function to process a single tenant ApplicationSet
+process_tenant_applicationset() {
+    local tenant_dir="$1"
+    local applicationset_file="$tenant_dir/applicationset.yaml"
+    
+    if [[ ! -f "$applicationset_file" ]]; then
+        return 1
+    fi
+    
+    # Extract the first element from the ApplicationSet (they're all the same tenant)
+    local tenant_name=$(yq eval '.spec.generators[0].list.elements[0].tenant' "$applicationset_file" 2>/dev/null)
+    local namespace=$(yq eval '.spec.generators[0].list.elements[0].namespace' "$applicationset_file" 2>/dev/null)
+    local node_port=$(yq eval '.spec.generators[0].list.elements[0].nodePort' "$applicationset_file" 2>/dev/null)
+    local domain=$(yq eval '.spec.generators[0].list.elements[0].domain' "$applicationset_file" 2>/dev/null)
+    local display_name=$(yq eval '.spec.generators[0].list.elements[0].displayName' "$applicationset_file" 2>/dev/null)
+    
+    # Check if we got valid values
+    if [[ "$tenant_name" == "null" || -z "$tenant_name" ]]; then
+        return 1
+    fi
+    
+    echo "===================="
+    print_info "Configuring OAuth for: $display_name"
+    print_info "Domain: http://$domain:$node_port"
+    echo ""
+    
+    # Prompt for GitHub OAuth credentials
+    read -p "Enter GitHub Client ID for $tenant_name: " github_client_id
+    read -s -p "Enter GitHub Client Secret for $tenant_name: " github_client_secret
+    echo ""
+    
+    if [[ -z "$github_client_id" || -z "$github_client_secret" ]]; then
+        print_warning "Skipping $tenant_name - missing credentials"
+        return 0
+    fi
+    
+    create_tenant_oauth_secret "$tenant_name" "$namespace" "$github_client_id" "$github_client_secret" "$node_port" "$domain"
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -88,33 +127,29 @@ setup_all_tenants() {
         exit 1
     fi
     
-    # Read tenant configuration and prompt for OAuth credentials
-    local tenant_count=$(yq eval '.tenants | length' "$TENANT_CONFIG")
+    # Check if ApplicationSets directory exists
+    if [[ ! -d "$APPLICATIONSETS_DIR" ]]; then
+        print_error "ApplicationSets directory not found: $APPLICATIONSETS_DIR"
+        exit 1
+    fi
     
-    for ((i=0; i<tenant_count; i++)); do
-        local tenant_name=$(yq eval ".tenants[$i].name" "$TENANT_CONFIG")
-        local namespace=$(yq eval ".tenants[$i].namespace" "$TENANT_CONFIG")
-        local node_port=$(yq eval ".tenants[$i].nodePort" "$TENANT_CONFIG")
-        local domain=$(yq eval ".tenants[$i].domain" "$TENANT_CONFIG")
-        local app_name=$(yq eval ".tenants[$i].github.appName" "$TENANT_CONFIG")
-        
-        echo "===================="
-        print_info "Configuring OAuth for: $app_name"
-        print_info "Domain: http://$domain:$node_port"
-        echo ""
-        
-        # Prompt for GitHub OAuth credentials
-        read -p "Enter GitHub Client ID for $tenant_name: " github_client_id
-        read -s -p "Enter GitHub Client Secret for $tenant_name: " github_client_secret
-        echo ""
-        
-        if [[ -z "$github_client_id" || -z "$github_client_secret" ]]; then
-            print_warning "Skipping $tenant_name - missing credentials"
-            continue
+    # Process each tenant directory
+    local processed_count=0
+    for tenant_dir in "$APPLICATIONSETS_DIR"/*/; do
+        if [[ -d "$tenant_dir" ]]; then
+            print_info "Found tenant directory: $(basename "$tenant_dir")"
+            if process_tenant_applicationset "$tenant_dir"; then
+                ((processed_count++))
+            else
+                print_warning "Skipped tenant directory: $(basename "$tenant_dir")"
+            fi
         fi
-        
-        create_tenant_oauth_secret "$tenant_name" "$namespace" "$github_client_id" "$github_client_secret" "$node_port" "$domain"
     done
+    
+    if [[ $processed_count -eq 0 ]]; then
+        print_error "No valid tenants found in ApplicationSet files"
+        exit 1
+    fi
 }
 
 # Function to setup single tenant
@@ -132,34 +167,24 @@ setup_single_tenant() {
         exit 1
     fi
     
-    # Find tenant in configuration
-    local tenant_index=$(yq eval ".tenants | map(select(.name == \"$target_tenant\")) | keys | .[0]" "$TENANT_CONFIG")
+    # Find tenant ApplicationSet directory
+    local tenant_dir="$APPLICATIONSETS_DIR/$target_tenant"
     
-    if [[ "$tenant_index" == "null" ]]; then
-        print_error "Tenant '$target_tenant' not found in configuration"
+    if [[ ! -d "$tenant_dir" ]]; then
+        print_error "Tenant '$target_tenant' not found. Available tenants:"
+        for dir in "$APPLICATIONSETS_DIR"/*/; do
+            if [[ -d "$dir" ]]; then
+                print_info "  - $(basename "$dir")"
+            fi
+        done
         exit 1
     fi
     
-    local namespace=$(yq eval ".tenants[$tenant_index].namespace" "$TENANT_CONFIG")
-    local node_port=$(yq eval ".tenants[$tenant_index].nodePort" "$TENANT_CONFIG")
-    local domain=$(yq eval ".tenants[$tenant_index].domain" "$TENANT_CONFIG")
-    local app_name=$(yq eval ".tenants[$tenant_index].github.appName" "$TENANT_CONFIG")
-    
-    print_info "Configuring OAuth for: $app_name"
-    print_info "Domain: http://$domain:$node_port"
-    echo ""
-    
-    # Prompt for GitHub OAuth credentials
-    read -p "Enter GitHub Client ID for $target_tenant: " github_client_id
-    read -s -p "Enter GitHub Client Secret for $target_tenant: " github_client_secret
-    echo ""
-    
-    if [[ -z "$github_client_id" || -z "$github_client_secret" ]]; then
-        print_error "Missing credentials"
+    # Process the tenant ApplicationSet
+    if ! process_tenant_applicationset "$tenant_dir"; then
+        print_error "Could not process tenant ApplicationSet for $target_tenant"
         exit 1
     fi
-    
-    create_tenant_oauth_secret "$target_tenant" "$namespace" "$github_client_id" "$github_client_secret" "$node_port" "$domain"
 }
 
 # Function to show help
