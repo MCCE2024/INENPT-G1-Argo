@@ -18,7 +18,8 @@ Automation scripts for INENPT-G1 multi-tenant Kubernetes setup.
 ### Phase 3: Deploy Applications
 
 6. `setup-multi-tenant-oauth.sh all` - Setup GitHub OAuth for all tenants
-7. `kubectl apply -f ../applicationsets/multi-tenant-applicationset.yaml` - Deploy applications
+7. `kubectl apply -f ../argocd-applicationsets.yaml` - Deploy applications
+8. `kubectl apply -f ../argocd-sync-config.yaml` - Deploy Sync Config
 
 ### Phase 4: DNS Setup (after apps are running)
 
@@ -27,17 +28,39 @@ Automation scripts for INENPT-G1 multi-tenant Kubernetes setup.
 ## Quick Start
 
 ```bash
+#installed programs neeeded
+# exo
+# kubectl
+
+#initial setup after cluster deployment
 ./get-kubeconfig.sh
 cd ../infrastructure && terraform apply && cd ../scripts
 ./get-argocd-info.sh
 ./setup-database.sh
+#setup database changes the values file for the api helm chart
+# because after the initial deployment we have a new db, with a new URL
+# and a new user pair
+# which needs to be pushed to the repo afterwards
+kubectl apply -f ../argocd-applicationsets.yaml
+kubectl apply -f ../argocd-sync-config.yaml
+
+#If you are using cloudflare and want to add dns records
+./setup-multi-tenant-dns.sh <your-token> <your-zone-id>
+
+# setup db secrets for tenants
 ./create-db-secret.sh tenant-a
 ./create-db-secret.sh tenant-b
 ./create-db-secret.sh tenant-c
-./setup-multi-tenant-oauth.sh all
-kubectl apply -f ../applicationsets/multi-tenant-applicationset.yaml
-# Wait for applications to be deployed, then:
-./setup-multi-tenant-dns.sh <your-token> <your-zone-id>
+./create-db-secret.sh tenant-d
+
+# Setup oauth
+# One oauth app per tenant
+# Oauth apps need to be created manually on Github
+./setup-multi-tenant-oauth.sh tenant-a
+./setup-multi-tenant-oauth.sh tenant-b
+./setup-multi-tenant-oauth.sh tenant-c
+./setup-multi-tenant-oauth.sh tenant-d
+
 ```
 
 All scripts include `--help` for detailed usage.
