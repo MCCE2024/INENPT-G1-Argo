@@ -26,13 +26,17 @@ service:
   port: 3000
   targetPort: 3000
 
+# Environment variables
+env:
+  TENANT_ID: "default" # Default tenant ID, can be overridden per deployment
+
 # External Database configuration (Aiven Cloud)
 database:
-  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.l.aivencloud.com"
+  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.k.aivencloud.com"
   port: 21699
   name: "defaultdb"
   user: "avnadmin"
-  password: "" # Set via secret
+  password: "" # Set via sealed secret
   ssl: "require"
   caCertConfigMap: "ca-certificate" # ConfigMap containing ca.pem
   # CA Certificate content - will be populated by setup script or manually
@@ -63,7 +67,6 @@ database:
     9qg9Epw+73JxVDJOkPjj4QEXkei9AcZp6wJAiSc8EWM/EadPwMchj6vMNOjASomu
     I8AnWg==
     -----END CERTIFICATE-----
-
 # Application configuration
 app:
   port: 3000
