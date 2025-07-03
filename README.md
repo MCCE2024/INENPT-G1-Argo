@@ -1,749 +1,453 @@
-# INENPT-G1-Argo: Our GitOps Learning Journey
+# INENPT-G1-Argo
 
-> **Part 3 of 3: Argo CD** 🏗️  
-> This repository contains the **Infrastructure as Code (IaC)** components (GitOps infrastructure and automation) of our multi-tenant cloud-native application. It's designed to work seamlessly with our [Application Code Repository](https://github.com/MCCE2024/INENPT-G1-Code) and [Infrastructure as Code Repository](https://github.com/MCCE2024/INENPT-G1-K8s) to create a complete GitOps pipeline.
+03.07.2025
 
-## 🧭 Repository Navigation Guide
+Multi-tenant Kubernetes application stack with ArgoCD GitOps, Sealed Secrets, and GitHub OAuth authentication.
 
-**For Students Learning Cloud Computing:**
+[!NOTE]
 
-1. Start Here: [INENPT-G1-Code](https://github.com/MCCE2024/INENPT-G1-Code) – Application development and microservices
-2. Next: [INENPT-G1-K8s](https://github.com/MCCE2024/INENPT-G1-K8s) – Kubernetes deployment and scaling
-3. Finally: [INENPT-G1-Argo](https://github.com/MCCE2024/INENPT-G1-Argo) – GitOps infrastructure and automation (**this repo**)
+> We worked mostly via the Liveshare extension, so there can often be uneven pushes in the Git repository.
 
-**For Professors Evaluating:**
-- Requirements Coverage: See below
-- Application Architecture: See below
-- Code Examples: See below
+## 📋 Overview
 
-**For Developers Contributing:**
-- Local Setup: See below
-- Build Process: See below
-- Development Workflow: See below
+This repository contains the ArgoCD configuration and deployment automation for a multi-tenant application stack consisting of:
 
-## �� Table of Contents
+- **API Service**: REST API for message management with PostgreSQL database
+- **Consumer Service**: Web dashboard with GitHub OAuth authentication
+- **Producer Service**: Automated message generation service
 
-- [🎯 What We Built](#-what-we-built-a-complete-cloud-native-system)
-- [✅ Course Requirements](#-course-requirements-how-we-met-every-criterion)
-- [🏗️ System Architecture](#️-system-architecture-overview)
-- [🏗️ Our 3-Repository Architecture](#️-our-3-repository-architecture-why-we-chose-this-path)
-- [🚀 Deep Dive: Helm](#-deep-dive-helm---our-first-love)
-- [🎭 ArgoCD: The GitOps Conductor](#-argocd-the-gitops-conductor)
-- [🔄 GitOps: The Philosophy](#-gitops-the-philosophy-behind-it-all)
-- [🛠️ Infrastructure Scripts](#️-our-infrastructure-scripts-production-ready-tools)
-- [🌍 Real-World Applications](#-real-world-applications-we-now-understand)
-- [🚨 Troubleshooting](#-troubleshooting-lessons-from-the-trenches)
-- [🎓 Key Concepts](#-key-concepts-every-cloud-computing-student-should-know)
-- [🚀 What We Want to Learn Next](#-what-we-want-to-learn-next)
-- [🤝 Learning Journey Reflection](#-our-learning-journey-reflection)
-- [📚 Resources](#-resources-that-helped-us)
-- [🎉 Conclusion](#-conclusion)
+### 🏗️ Architecture
 
-## 📁 Project Structure
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Multi-Tenant Architecture                    │
+├─────────────────────────────────────────────────────────────────┤
+│  mcce.uname.at:30000 → Tenant A → namespace: tenant-a          │
+│  mcce.uname.at:30001 → Tenant B → namespace: tenant-b          │
+│  mcce.uname.at:30002 → Tenant C → namespace: tenant-c          │
+│  mcce.uname.at:30003 → Tenant D → namespace: tenant-d          │
+├─────────────────────────────────────────────────────────────────┤
+│  Each tenant includes:                                          │
+│  • API Service (REST API + Database)                           │
+│  • Consumer Service (Web Dashboard + OAuth)                    │
+│  • Producer Service (Message Generation)                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 🔐 Security Features
+
+- **Sealed Secrets**: Encrypted secrets safe for Git storage
+- **Namespace Isolation**: Each tenant runs in separate Kubernetes namespace
+- **OAuth Authentication**: GitHub OAuth integration per tenant
+- **GitOps Workflow**: Declarative configuration with ArgoCD
+
+## 📁 Repository Structure
 
 ```
 INENPT-G1-Argo/
-├── applications/                      # Application Helm charts and ArgoCD configs
-│   ├── api/                          # API service (Node.js + PostgreSQL)
-│   │   ├── helm/                     # Helm chart for API service
-│   │   │   ├── Chart.yaml            # Chart metadata and dependencies
-│   │   │   ├── values.yaml           # Default configuration values
-│   │   │   └── templates/            # Kubernetes manifest templates
-│   │   │       ├── deployment.yaml   # API deployment configuration
-│   │   │       ├── service.yaml      # API service configuration
-│   │   │       └── _helpers.tpl      # Reusable template functions
-│   │   └── argocd-application.yaml   # ArgoCD application definition
-│   ├── consumer/                     # Consumer service (Node.js web dashboard)
-│   │   ├── helm/                     # Helm chart for consumer service
-│   │   │   ├── Chart.yaml
-│   │   │   ├── values.yaml
-│   │   │   └── templates/
-│   │   │       ├── deployment.yaml
-│   │   │       └── service.yaml
-│   │   └── argocd-application.yaml
-│   └── producer/                     # Producer service (Python CronJob)
-│       ├── helm/                     # Helm chart for producer service
-│       │   ├── Chart.yaml
-│       │   ├── values.yaml
-│       │   └── templates/
-│       │       ├── cronjob.yaml      # CronJob for scheduled message generation
-│       │       └── secret.yaml       # OAuth2 secrets configuration
-│       └── argocd-application.yaml
-├── infrastructure/                   # Infrastructure as Code and scripts
-│   ├── argocd.tf                     # Terraform configuration for ArgoCD
-│   ├── argocd-image-updater.tf       # Terraform for ArgoCD image updater
-│   ├── setup-database.sh             # Database setup and secret creation
-│   ├── create-db-secret.sh           # Kubernetes secret creation script
-│   ├── get-argocd-info.sh            # ArgoCD access information script
-│   └── get-kubeconfig.sh             # SKS cluster kubeconfig fetcher
-├── argocd-apps.yaml                  # Root ArgoCD applications configuration
-├── argocd-sync-config.yaml           # ArgoCD sync policy configuration
-├── setup-cloudflare-dns.sh           # DNS configuration script
-├── setup-oauth-secrets.sh            # OAuth2 secrets setup script
-└── README.md                         # This comprehensive learning journey
+├── applications/                    # Helm charts for applications
+│   ├── api/helm/                   # API service Helm chart
+│   │   ├── Chart.yaml
+│   │   ├── values.yaml
+│   │   └── templates/
+│   │       ├── configmap.yaml
+│   │       └── deployment.yaml
+│   ├── consumer/helm/              # Consumer service Helm chart
+│   │   ├── Chart.yaml
+│   │   ├── values.yaml
+│   │   └── templates/
+│   │       ├── deployment.yaml
+│   │       └── service.yaml
+│   └── producer/helm/              # Producer service Helm chart
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/
+│           ├── cronjob.yaml
+│           └── secret.yaml
+├── applicationsets/                 # ArgoCD ApplicationSets
+│   ├── master-applicationset.yaml  # Master ApplicationSet
+│   └── tenants/                    # Tenant-specific ApplicationSets
+│       ├── tenant-a/
+│       │   └── applicationset.yaml
+│       ├── tenant-b/
+│       │   └── applicationset.yaml
+│       ├── tenant-c/
+│       │   └── applicationset.yaml
+│       └── tenant-d/
+│           └── applicationset.yaml
+├── infrastructure/                  # Infrastructure as Code (OpenTofu)
+│   ├── argocd.tf                   # ArgoCD deployment
+│   ├── argocd-image-updater.tf     # ArgoCD Image Updater
+│   ├── sealed-secrets.tf           # Sealed Secrets controller
+│   └── kubeconfig.yaml             # Kubernetes cluster config
+├── scripts/                        # Automation scripts
+│   ├── setup-database.sh           # Database setup with sealed secrets
+│   ├── setup-multi-tenant-oauth.sh # OAuth setup for all tenants
+│   ├── get-kubeconfig.sh          # Kubernetes access
+│   ├── get-argocd-info.sh         # ArgoCD access info
+│   ├── setup-cloudflare-dns.sh    # DNS configuration
+│   ├── ca.pem                      # Database CA certificate
+│   ├── kubeconfig.yaml             # Kubernetes config
+│   └── cloudflare-config.txt       # Cloudflare configuration
+├── secrets/                        # Encrypted sealed secrets (safe for Git)
+│   ├── tenant-a-api-db-sealed-secret.yaml      # Database secrets
+│   ├── tenant-a-oauth-sealed-secret.yaml       # OAuth secrets
+│   ├── tenant-b-api-db-sealed-secret.yaml      # Database secrets
+│   ├── tenant-c-api-db-sealed-secret.yaml      # Database secrets
+│   ├── tenant-c-oauth-sealed-secret.yaml       # OAuth secrets
+│   ├── tenant-d-api-db-sealed-secret.yaml      # Database secrets
+│   └── tenant-d-oauth-sealed-secret.yaml       # OAuth secrets
+├── argocd-applicationsets.yaml     # Main ApplicationSet deployment
+├── argocd-sync-config.yaml        # ArgoCD sync configuration
+└── README.md                       # This comprehensive documentation
 ```
 
-### **🔗 Related Repositories**
+## 🚀 Quick Start
 
-This project is part of a **3-repository GitOps strategy**:
+### Prerequisites
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              GIT REPOSITORIES                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │  INENPT-G1-Code │    │  INENPT-G1-K8s  │    │ INENPT-G1-Argo  │         │
-│  │                 │    │                 │    │                 │         │
-│  │ • Application   │───▶│ • Helm Charts   │───▶│ • ArgoCD Apps   │         │
-│  │ • Dockerfiles   │    │ • K8s Manifests │    │ • Terraform     │         │
-│  │ • CI/CD         │    │ • Values        │    │ • Scripts       │         │
-│  │ • Tests         │    │ • Secrets       │    │ • Infrastructure│         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+- **Kubernetes Cluster** with kubectl access
+- **ArgoCD** installed and configured
+- **Sealed Secrets Controller** deployed
+- **GitHub Account** for OAuth applications
+- **Cloudflare Account** for DNS management (optional)
+- **Exo Account** for cluster deployment and DBaaS
 
-- **[INENPT-G1-Code](https://github.com/MCCE2024/INENPT-G1-Code)**: Application code, Dockerfiles, and CI/CD pipelines
-- **[INENPT-G1-K8s](https://github.com/MCCE2024/INENPT-G1-K8s)**: Kubernetes manifests and Helm charts
-- **[INENPT-G1-Argo](https://github.com/MCCE2024/INENPT-G1-Argo)**: ArgoCD infrastructure and deployment configuration (this repo)
+Required CLI tools:
 
-> [!TIP]
-> **Repository Strategy**: Each repository has a single responsibility. This separation enables independent development, testing, and deployment while maintaining clear boundaries between concerns.
+- `kubectl`
+- `kubeseal` (Sealed Secrets CLI)
+- `exo` (Exoscale CLI)
+- `yq` (YAML processor)
 
-## 🎯 What We Built: A Complete Cloud-Native System
+### 🔧 Setup Instructions
 
-As cloud computing students, we built a **message processing system** that taught us the fundamentals of modern cloud architecture:
+#### Phase 1: Infrastructure Setup
 
-- **Producer** (Python): Generates datetime messages and sends them via HTTP
-- **API** (Node.js): Receives messages and stores them in PostgreSQL  
-- **Consumer** (Node.js): Fetches messages and displays them in a web dashboard
-- **PostgreSQL**: Persistent storage for all messages
+```bash
+# 1. Get Kubernetes cluster access
+./scripts/get-kubeconfig.sh
 
-But here's the exciting part - we didn't just build applications. We learned how to **deploy them like professionals** using industry-standard tools!
+# 2. Deploy ArgoCD + Sealed Secrets
+cd infrastructure
+terraform apply
 
-> [!TIP]
-> **Why This Matters**: Understanding deployment is just as important as writing code. Most cloud computing students focus only on application development, but real-world success requires mastering deployment practices.
-
-## ✅ Course Requirements: How We Met Every Criterion
-
-Our project was designed to meet specific course requirements. Here's how we satisfied each one:
-
-### **🏗️ Multi-Service Architecture**
-- ✅ **3+ Services**: Producer, API, Consumer
-- ✅ **Database Integration**: PostgreSQL via Exoscale DBAAS
-- ✅ **Service Communication**: HTTP-based REST APIs
-
-### **🔐 Authentication & Security**
-- ✅ **OAuth2 Implementation**: GitHub OAuth for service authentication
-- ✅ **Security-First Design**: 
-  - Kubernetes secrets for sensitive data
-  - SSL/TLS for database connections
-  - Time-limited cluster access
-  - No secrets stored in Git
-
-### **🚀 Infrastructure & Deployment**
-- ✅ **No-Click Setup**: Fully automated via Terraform and ArgoCD
-- ✅ **Kubernetes Deployment**: Exoscale SKS managed cluster
-- ✅ **Cloud Provider**: Exoscale for all infrastructure
-- ✅ **VM Components**: Kubernetes nodes run on VMs (managed by Exoscale)
-- ✅ **Scalability**: Horizontal pod scaling and load balancers
-
-### **🔄 GitOps & Multi-Tenancy**
-- ✅ **IaC Tool**: Terraform for infrastructure provisioning
-- ✅ **GitOps Controller**: ArgoCD for automated deployments
-- ✅ **Multi-Tenant**: New tenants via Git commits (namespace changes)
-- ✅ **Minimal Effort**: `git commit` deploys new tenant environments
-
-### **💾 Database & Cloud Services**
-- ✅ **Cloud Database**: Exoscale DBAAS PostgreSQL
-- ✅ **Managed Service**: Automatic backups, updates, and monitoring
-
-**Our Innovation**: While the concept is simple, our **3-repository GitOps strategy** demonstrates enterprise-level deployment practices used by companies like Netflix and Spotify.
-
-> [!NOTE]
-> **Innovation Factor**: While our message processing concept is simple, our 3-repository GitOps strategy demonstrates enterprise-level practices that would impress investors. This shows we understand not just coding, but production deployment at scale.
-
-## 🏗️ System Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              EXOSCALE CLOUD                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │   PRODUCER      │    │      API        │    │   CONSUMER      │         │
-│  │   (Python)      │───▶│   (Node.js)     │───▶│   (Node.js)     │         │
-│  │                 │    │                 │    │                 │         │
-│  │ • CronJob       │    │ • REST API      │    │ • Web Dashboard │         │
-│  │ • HTTP Client   │    │ • PostgreSQL    │    │ • HTTP Client   │         │
-│  │ • OAuth2 Auth   │    │ • OAuth2 Auth   │    │ • OAuth2 Auth   │         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-│                                   │                                          │
-│                                   ▼                                          │
-│                        ┌─────────────────┐                                  │
-│                        │   POSTGRESQL    │                                  │
-│                        │  (Exoscale      │                                  │
-│                        │   DBAAS)        │                                  │
-│                        │                 │                                  │
-│                        │ • SSL/TLS       │                                  │
-│                        │ • Managed       │                                  │
-│                        │ • Backups       │                                  │
-│                        └─────────────────┘                                  │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                    KUBERNETES CLUSTER (SKS)                        │   │
-│  │                                                                     │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │   │
-│  │  │   ARGOCD    │  │   HELM      │  │  TERRAFORM  │  │   SECRETS   │ │   │
-│  │  │             │  │ • Charts    │  │ • IaC       │  │ • Database  │ │   │
-│  │  │ • GitOps    │  │ • Values    │  │ • Cluster   │  │ • OAuth2    │ │   │
-│  │  │ • Sync      │  │ • Templates │  │ • ArgoCD    │  │ • SSL Certs │ │   │
-│  │  │ • UI        │  │ • Templates │  │ • ArgoCD    │  │ • SSL Certs │ │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      LOAD BALANCER                                  │   │
-│  │                                                                     │   │
-│  │  • External IP for ArgoCD UI                                        │   │
-│  │  • SSL Termination                                                  │   │
-│  │  • Health Checks                                                    │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              GIT REPOSITORIES                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │  INENPT-G1-Code │    │  INENPT-G1-K8s  │    │ INENPT-G1-Argo  │         │
-│  │                 │    │                 │    │                 │         │
-│  │ • Application   │───▶│ • Helm Charts   │───▶│ • ArgoCD Apps   │         │
-│  │ • Dockerfiles   │    │ • K8s Manifests │    │ • Terraform     │         │
-│  │ • CI/CD         │    │ • Values        │    │ • Scripts       │         │
-│  │ • Tests         │    │ • Secrets       │    │ • Infrastructure│         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-└─────────────────────────────────────────────────────────────────────────────┘
+# 3. Get ArgoCD access information
+cd ..
+./scripts/get-argocd-info.sh
 ```
 
-**Key Features**:
-- 🔐 **OAuth2 Authentication** across all services
-- 🔄 **GitOps Workflow** with ArgoCD
-- 🏗️ **Infrastructure as Code** with Terraform
-- 📦 **Container Orchestration** with Kubernetes
-- 🗄️ **Managed Database** with SSL/TLS
-- 🚀 **Scalable Architecture** with load balancers
-- 🔒 **Security-First** with secrets management
+#### Phase 2: Secrets Configuration
 
-## 🏗️ Our 3-Repository Architecture: Why We Chose This Path
+```bash
+# 4. Setup database connection with sealed secrets
+./scripts/setup-database.sh
+# Creates: tenant-*-api-db-sealed-secret.yaml (one per tenant)
 
-> [!IMPORTANT]
-> **Our "Aha!" Moment**: We realized that real-world cloud applications need more than just working code. They need **reliable, repeatable, and secure deployment processes**.
+# 5. Setup OAuth for all tenants
+./scripts/setup-multi-tenant-oauth.sh all
+# Creates: tenant-*-oauth-sealed-secret.yaml (one per tenant)
 
-### The Problem We Solved
-
-Initially, we put everything in one repository. It worked, but we quickly discovered problems:
-
-- ❌ **Deployment confusion**: Every code change triggered a deployment
-- ❌ **Testing difficulties**: Hard to test containers locally without affecting production
-- ❌ **Team conflicts**: Multiple people working on different parts caused merge conflicts
-- ❌ **Security concerns**: Infrastructure secrets mixed with application code
-
-> [!CAUTION]
-> **Common Mistake**: Many students put everything in one repository. This works for small projects but becomes unmanageable as complexity grows. Our 3-repo strategy prevents these issues from the start.
-
-### Our Solution: The 3-Repository Strategy
-
-We separated our concerns into three focused repositories:
-
-| Repository | Purpose | What We Learned |
-|------------|---------|-----------------|
-| **[INENPT-G1-Code](https://github.com/MCCE2024/INENPT-G1-Code)** | Application code & CI/CD | How to build and package microservices |
-| **[INENPT-G1-K8s](https://github.com/MCCE2024/INENPT-G1-K8s)** | Kubernetes manifests | How to define application deployment |
-| **[INENPT-G1-Argo](https://github.com/MCCE2024/INENPT-G1-Argo)** | ArgoCD infrastructure | How to manage GitOps deployment |
-
-### Why This Separation Works
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Code Repo     │    │   K8s Repo      │    │   Argo Repo     │
-│                 │    │                 │    │                 │
-│ • Application   │───▶│ • Helm Charts   │───▶│ • ArgoCD Apps   │
-│ • Dockerfiles   │    │ • K8s Manifests │    │ • Infrastructure│
-│ • CI/CD         │    │ • Values        │    │ • Terraform     │
-│ • Tests         │    │ • Secrets       │    │ • Scripts       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+#Push the secret files and the changed value file of the api to the repo
 ```
 
-**The Magic**: Only changes to the **K8s repository** trigger ArgoCD deployments. This means:
-- ✅ You can test containers locally without affecting production
-- ✅ Application code changes don't automatically deploy
-- ✅ Infrastructure changes are separate and auditable
-- ✅ Different teams can work independently
+#### Phase 3: Application Deployment
 
-> [!TIP]
-> **Pro Tip**: This separation allows you to test application changes locally without triggering deployments. Only when you're ready do you update the K8s repository to deploy.
+```bash
+# 6. Deploy ApplicationSets
+kubectl apply -f argocd-applicationsets.yaml
 
-## 🚀 Deep Dive: Helm - Our First Love
-
-> **What is Helm?** Think of Helm as a "package manager for Kubernetes" - like `apt` for Ubuntu, but for cloud applications.
-
-> [!NOTE]
-> **Why Helm Matters**: Helm transforms repetitive Kubernetes YAML into reusable templates. This is a game-changer for managing complex deployments.
-
-### Why We Fell in Love with Helm
-
-Before Helm, we were writing raw Kubernetes YAML files. It worked, but it was **painful**:
-
-```yaml
-# Without Helm - repetitive and error-prone
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-deployment
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: api
-  template:
-    metadata:
-      labels:
-        app: api
-    spec:
-      containers:
-      - name: api
-        image: ghcr.io/mcce2024/argo-g1-api:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DB_HOST
-          value: "postgres.example.com"
-        - name: DB_PORT
-          value: "5432"
-        # ... 50 more lines of configuration
+# 7. Deploy sync configuration
+kubectl apply -f argocd-sync-config.yaml
 ```
 
-With Helm, we write **templates** and **values**:
+#### Phase 4: DNS Configuration (Optional)
 
-```yaml
-# Helm template - reusable and clean
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ .Release.Name }}-deployment
-spec:
-  replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ .Chart.Name }}
-  template:
-    metadata:
-      labels:
-        app: {{ .Chart.Name }}
-    spec:
-      containers:
-      - name: {{ .Chart.Name }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-        ports:
-        - containerPort: {{ .Values.service.port }}
-        env:
-        {{- range $key, $value := .Values.environment }}
-        - name: {{ $key }}
-          value: {{ $value | quote }}
-        {{- end }}
+```bash
+# 8. Setup Cloudflare DNS
+./scripts/setup-cloudflare-dns.sh <api-token> <zone-id>
 ```
 
-> [!TIP]
-> **Helm Best Practice**: Write templates once, use with different values for different environments (dev, staging, prod). This is the power of Helm!
+## 🔐 Sealed Secrets Integration
 
-### Our Helm Chart Structure
+This project uses **Sealed Secrets** for secure GitOps workflows:
 
-```
-applications/api/helm/
-├── Chart.yaml          # Chart metadata
-├── values.yaml         # Default values
-└── templates/          # Kubernetes templates
-    ├── deployment.yaml
-    ├── service.yaml
-    └── _helpers.tpl    # Reusable template functions
-```
+### What are Sealed Secrets?
 
-### What We Learned About Helm Values
+Sealed Secrets are encrypted Kubernetes secrets that can only be decrypted by the sealed-secrets controller running in your cluster. This allows safe storage of secrets in Git repositories.
 
-**Values files** are where the magic happens. They let us configure the same application for different environments:
+### Benefits
 
-```yaml
-# values.yaml - our configuration
-replicaCount: 3
-image:
-  repository: ghcr.io/mcce2024/argo-g1-api
-  tag: latest
+- ✅ **Safe to commit to Git** - Secrets are encrypted
+- ✅ **Automatic decryption** - Controller handles decryption
+- ✅ **Namespace isolation** - Tenant-specific secrets
+- ✅ **GitOps compatible** - Declarative secret management
 
-database:
-  host: "postgres.example.com"
-  port: 5432
-  name: "messages"
-  user: "api_user"
-  password: "" # Set via Kubernetes secret
+### Secret Types
 
-service:
-  port: 3000
-  type: ClusterIP
-```
+| Secret Type                          | Scope      | Purpose                    |
+| ------------------------------------ | ---------- | -------------------------- |
+| `tenant-*-api-db-sealed-secret.yaml` | Per-tenant | Database credentials       |
+| `tenant-*-oauth-sealed-secret.yaml`  | Per-tenant | GitHub OAuth configuration |
 
-**Our Discovery**: Helm values let us use the same application template for development, staging, and production - just with different values!
+### Manual creation (if needed)
 
-## 🎭 ArgoCD: The GitOps Conductor
+```bash
+# Create sealed secret manually
+kubectl create secret generic my-secret \
+  --from-literal=key=value \
+  --namespace=tenant-a \
+  --dry-run=client -o yaml | \
+  kubeseal --controller-name=sealed-secrets \
+  --controller-namespace=sealed-secrets-system \
+  -o yaml > my-sealed-secret.yaml
 
-> **What is ArgoCD?** ArgoCD is like a "smart deployment manager" that watches your Git repositories and automatically keeps your Kubernetes cluster in sync.
-
-> [!IMPORTANT]
-> **GitOps Revolution**: ArgoCD makes Git the single source of truth for your infrastructure. This is how companies like Netflix deploy thousands of services reliably.
-
-### Our ArgoCD Application Definition
-
-Here's how we tell ArgoCD to deploy our API:
-
-```yaml
-# applications/api/argocd-application.yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: api
-  namespace: argocd
-  annotations:
-    # Automatic image updates
-    argocd-image-updater.argoproj.io/image-list: api=ghcr.io/mcce2024/argo-g1-api:latest
-    argocd-image-updater.argoproj.io/api.update-strategy: digest
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
-    targetRevision: main
-    path: applications/api/helm  # Points to our Helm chart
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: test-tenant
-  syncPolicy:
-    automated:
-      prune: true      # Remove resources not in Git
-      selfHeal: true   # Fix drift automatically
-    syncOptions:
-      - CreateNamespace=true
+# Apply to cluster
+kubectl apply -f my-sealed-secret.yaml
 ```
 
-### What This Means in Practice
+## 🏢 Multi-Tenant Configuration
 
-1. **We push code** to INENPT-G1-Code → CI/CD builds containers
-2. **We update K8s manifests** in INENPT-G1-K8s → ArgoCD detects changes
-3. **ArgoCD automatically deploys** → Our cluster matches Git exactly
+### Tenant Setup
 
-**Our "Wow!" Moment**: We realized this is how companies like Netflix and Spotify deploy thousands of services!
+This can also be setup without DNS (just use the IPs).
 
-### ArgoCD's Superpowers
+Each tenant requires:
 
-- **🔍 Git as Source of Truth**: Your Git repository is the single source of truth
-- **🔄 Automatic Sync**: Changes in Git automatically update your cluster
-- **🛡️ Drift Detection**: ArgoCD detects when someone manually changes the cluster
-- **⏪ Easy Rollbacks**: Click a button to go back to any previous version
-- **👀 Visual Dashboard**: See the status of all your applications in one place
+1. **GitHub OAuth Application**
 
-> [!TIP]
-> **ArgoCD Pro Tip**: Use the web UI to visualize your deployment status. It shows exactly what's deployed vs. what's in Git, making debugging much easier.
+   - Application Name: `MCCE Tenant X`
+   - Homepage URL: `http://mcce.uname.at:3000X`
+   - Callback URL: `http://mcce.uname.at:3000X/auth/github/callback`
 
-## 🔄 GitOps: The Philosophy Behind It All
+2. **Kubernetes Namespace**
 
-> **What is GitOps?** GitOps is the practice of using Git as the single source of truth for both application code AND infrastructure configuration.
+   - Automatically created by setup scripts
+   - Isolated resources per tenant
 
-### The GitOps Workflow
+3. **Sealed Secrets**
+   - Database credentials
+   - OAuth configuration
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Developer │    │     Git     │    │   ArgoCD    │    │ Kubernetes  │
-│             │    │             │    │             │    │   Cluster   │
-│ Makes       │───▶│ Repository  │───▶│ Detects     │───▶│ Deploys     │
-│ Changes     │    │             │    │ Changes     │    │ Changes     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
+### Tenant Access URLs
 
-### Why GitOps Matters
+After deployment:
 
-**Before GitOps**: Deployments were manual, error-prone, and hard to track
-- ❌ "What's currently deployed?" - Nobody knows
-- ❌ "Who made that change?" - No audit trail
-- ❌ "How do we rollback?" - Manual process
+- **Tenant A**: http://mcce.uname.at:30000
+- **Tenant B**: http://mcce.uname.at:30001
+- **Tenant C**: http://mcce.uname.at:30002
+- **Tenant D**: http://mcce.uname.at:30003
 
-**With GitOps**: Everything is version-controlled and automated
-- ✅ "What's currently deployed?" - Check Git
-- ✅ "Who made that change?" - Git commit history
-- ✅ "How do we rollback?" - Revert Git commit
+### Adding New Tenants
 
-> [!WARNING]
-> **Critical Security Note**: Never store secrets in Git! Use Kubernetes secrets and external secret management. We learned this the hard way.
+1. Create tenant directory in `applicationsets/tenants/`
+2. Configure GitHub OAuth application
+3. Run setup scripts for new tenant
+4. Update ApplicationSet configurations
 
-### Our GitOps Benefits
-
-- **🎯 Declarative**: We describe what we want, not how to do it
-- **🔒 Secure**: All changes go through Git review process
-- **📊 Auditable**: Complete history of who changed what and when
-- **🚀 Fast**: Automated deployments reduce human error
-- **🔄 Reversible**: Easy rollbacks to any previous state
-
-## 🛠️ Our Infrastructure Scripts: Production-Ready Tools
-
-We built several scripts that taught us about real-world deployment challenges:
+## 📜 Scripts Documentation
 
 ### Database Setup (`setup-database.sh`)
 
-This script taught us about **secure database configuration**:
+Configures database connection with sealed secrets:
 
 ```bash
-# Extract database credentials from Exoscale
-DB_URI=$(exo dbaas show "$DB_NAME" --zone "$ZONE" --uri)
-
-# Create Kubernetes secret (not in Git!)
-kubectl create secret generic api-db-secret \
-    --from-literal=password="$DB_PASSWORD" \
-    --namespace=default
+./scripts/setup-database.sh
 ```
 
-**What We Learned**: Never store secrets in Git! Use Kubernetes secrets and external secret management.
+**What it does:**
 
-### ArgoCD Access (`get-argocd-info.sh`)
+- Retrieves database credentials from Exoscale
+- Downloads CA certificate
+- Adds CA Certificate to API Helm values.yaml
+- Creates sealed secrets for each tenant namespace
+- Updates API Helm values
 
-This script taught us about **service discovery**:
+### OAuth Setup (`setup-multi-tenant-oauth.sh`)
+
+Configures GitHub OAuth for tenants:
 
 ```bash
-# Get LoadBalancer IP dynamically
-EXTERNAL_IP=$(kubectl get svc "$SERVICE_NAME" -n "$NAMESPACE" \
-    -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+# Setup all tenants
+./scripts/setup-multi-tenant-oauth.sh all
+
+# Setup specific tenant
+./scripts/setup-multi-tenant-oauth.sh tenant-a
 ```
 
-**What We Learned**: Cloud infrastructure is dynamic - always query for current values.
+**What it does:**
 
-### Kubeconfig Management (`get-kubeconfig.sh`)
+- Creates Kubernetes namespaces
+- Generates secure session secrets
+- Creates OAuth sealed secrets per tenant
+- Applies secrets to cluster
 
-This script taught us about **cluster access management**:
+### Other Scripts
+
+- `get-kubeconfig.sh` - Retrieves Kubernetes cluster access
+- `get-argocd-info.sh` - Shows ArgoCD access information
+- `setup-cloudflare-dns.sh` - Configures DNS records
+
+## 🛠️ Management Operations
+
+### Viewing Sealed Secrets
 
 ```bash
-# Generate time-limited kubeconfig
-exo compute sks kubeconfig "$CLUSTER_NAME" "$USER" \
-    --zone "$ZONE" \
-    --group "$GROUP" \
-    --ttl "$TTL"
+# List all sealed secrets
+kubectl get sealedsecrets -A
+
+# Check specific tenant
+kubectl get sealedsecrets -n tenant-a
+
+# View secret content (encrypted)
+kubectl get sealedsecret api-db-secret -n tenant-a -o yaml
 ```
 
-**What We Learned**: Security is about time-limited, role-based access.
+### Updating Secrets
 
-> [!TIP]
-> **Script Wisdom**: These scripts taught us that production-ready tools need to handle dynamic infrastructure, security, and error cases gracefully.
-
-## 🌍 Real-World Applications We Now Understand
-
-### E-commerce Platform
-- **Producer**: Inventory updates, order notifications
-- **API**: User authentication, order management
-- **Consumer**: Email notifications, dashboard updates
-- **Database**: Persistent storage of orders and user data
-
-### Social Media Platform
-- **Producer**: New posts, comments, likes
-- **API**: User profiles, content management
-- **Consumer**: News feed updates, notifications
-- **Database**: Persistent storage of posts and interactions
-
-### IoT Data Processing
-- **Producer**: Sensor data from devices
-- **API**: Device management, user access
-- **Consumer**: Analytics dashboards, alerts
-- **Database**: Persistent storage of sensor data
-
-> [!NOTE]
-> **Real-World Connection**: Understanding these patterns helps us see how our simple message system applies to complex enterprise applications. This is valuable knowledge for job interviews!
-
-## 🚨 Troubleshooting: Lessons from the Trenches
-
-> [!CAUTION]
-> **Common Pitfall**: Many students focus only on building applications and ignore deployment issues. Our troubleshooting experience is what makes us production-ready.
-
-### Common Issues We Encountered
-
-#### 1. **ArgoCD Sync Failures**
 ```bash
-# Check ArgoCD application status
+# Update database secrets
+./scripts/setup-database.sh
+
+# Update OAuth secrets for specific tenant
+./scripts/setup-multi-tenant-oauth.sh tenant-a
+
+# Update all OAuth secrets
+./scripts/setup-multi-tenant-oauth.sh all
+```
+
+### Monitoring Applications
+
+```bash
+# Check ArgoCD applications
 kubectl get applications -n argocd
-kubectl describe application api -n argocd
 
-# Check application logs
-kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server
+# Check application pods
+kubectl get pods -n tenant-a
+
+# View application logs
+kubectl logs -n tenant-a deployment/consumer
 ```
 
-**Our Solution**: Always check the ArgoCD UI first - it shows exactly what's wrong!
+## 🔍 Troubleshooting
 
-#### 2. **Helm Template Errors**
+### Common Issues
+
+#### Sealed Secret Not Decrypted
+
 ```bash
-# Test Helm templates locally
-helm template api applications/api/helm --values applications/api/helm/values.yaml
+# Check sealed secret status
+kubectl describe sealedsecret api-db-secret -n tenant-a
 
-# Validate Helm chart
-helm lint applications/api/helm
+# Check controller logs
+kubectl logs -n sealed-secrets-system -l app.kubernetes.io/name=sealed-secrets
 ```
 
-**Our Solution**: Test templates locally before pushing to Git.
+#### OAuth Authentication Fails
 
-#### 3. **Database Connection Issues**
 ```bash
-# Check if secret exists
-kubectl get secret api-db-secret -n default
+# Check OAuth secret
+kubectl get secret consumer-oauth-secret -n tenant-a -o yaml
 
-# Test database connection
-kubectl exec -it deployment/api -- env | grep DB_
+# Check consumer service logs
+kubectl logs -n tenant-a deployment/consumer
 ```
 
-**Our Solution**: Database secrets must exist before deploying the application.
+#### Database Connection Issues
 
-#### 4. **Image Pull Errors**
 ```bash
-# Check if image exists
-docker pull ghcr.io/mcce2024/argo-g1-api:latest
+# Check database secret
+kubectl get secret api-db-secret -n tenant-a
 
-# Check image pull secrets
-kubectl get secret -n default
+# Check API service logs
+kubectl logs -n tenant-a deployment/api
 ```
 
-**Our Solution**: Always test image pulls locally before deployment.
-
-> [!TIP]
-> **Debugging Strategy**: Start with the ArgoCD UI, then check logs, then verify secrets and connectivity. This systematic approach saves hours of debugging.
-
-### Debugging Commands We Use Daily
+### Useful Commands
 
 ```bash
-# Check what's running
-kubectl get pods -A
-kubectl get services -A
+# Check all tenant namespaces
+kubectl get namespaces | grep tenant
 
-# Check application logs
-kubectl logs -f deployment/api
+# Check services in tenant namespace
+kubectl get services -n tenant-a
 
-# Check ArgoCD status
+# Check resource usage
+kubectl top pods -n tenant-a
+
+# Test connectivity
+kubectl exec -n tenant-a deployment/consumer -- curl http://api-service:80/health
+```
+
+## 🔒 Security Considerations
+
+### Sealed Secrets Security
+
+- **Encryption**: Secrets encrypted with cluster-specific keys
+- **Scope**: Namespace-scoped secrets for tenant isolation
+- **Backup**: Private keys should be backed up for disaster recovery
+
+### Multi-Tenant Security
+
+- **Namespace Isolation**: Each tenant runs in separate namespace
+- **Resource Limits**: Defined CPU/memory limits per tenant
+- **Network Policies**: Consider implementing for additional isolation
+- **OAuth Isolation**: Separate OAuth apps per tenant
+
+### Best Practices
+
+1. **Regular Key Rotation**: Sealed secrets keys rotate automatically
+2. **Secret Backup**: Backup sealed-secrets private keys
+3. **Access Control**: Use RBAC for ArgoCD access
+4. **Monitoring**: Monitor secret decryption status
+
+## 📊 Monitoring and Observability
+
+### Health Checks
+
+```bash
+# Check all applications
 kubectl get applications -n argocd
-kubectl describe application api -n argocd
 
-# Check Helm releases
-helm list -A
+# Check sealed secrets status
+kubectl get sealedsecrets -A
+
+# Check pod health
+kubectl get pods -A | grep -E "(tenant-|argocd|sealed-secrets)"
 ```
 
-## 🎓 Key Concepts Every Cloud Computing Student Should Know
+### Logs
 
-### 1. **Container Orchestration (Kubernetes)**
-- **What**: Managing multiple containers across multiple servers
-- **Why**: Manual container management doesn't scale
-- **How**: Kubernetes handles scheduling, scaling, and health monitoring
+```bash
+# ArgoCD server logs
+kubectl logs -n argocd deployment/argocd-server
 
-### 2. **Package Management (Helm)**
-- **What**: Templates and values for Kubernetes applications
-- **Why**: Raw YAML is repetitive and error-prone
-- **How**: Write templates once, use with different values
+# Sealed secrets controller logs
+kubectl logs -n sealed-secrets-system -l app.kubernetes.io/name=sealed-secrets
 
-### 3. **GitOps (ArgoCD)**
-- **What**: Git as the single source of truth for deployments
-- **Why**: Manual deployments are unreliable and hard to track
-- **How**: ArgoCD watches Git and keeps cluster in sync
+# Application logs
+kubectl logs -n tenant-a deployment/api
+kubectl logs -n tenant-a deployment/consumer
+kubectl logs -n tenant-a deployment/producer
+```
 
-### 4. **Multi-Repository Strategy**
-- **What**: Separate repositories for different concerns
-- **Why**: Single repository becomes unmanageable at scale
-- **How**: Clear boundaries between code, configuration, and infrastructure
+### Getting Help
 
-### 5. **Secret Management**
-- **What**: Secure storage of sensitive information
-- **Why**: Secrets in code are a security nightmare
-- **How**: Kubernetes secrets, external secret managers
+1. **Check Application Logs**: Review pod logs in tenant namespaces
+2. **Verify Secrets**: Ensure sealed secrets are properly decrypted
+3. **Check ArgoCD**: Verify application sync status
+4. **Test Connectivity**: Validate service-to-service communication
 
-> [!IMPORTANT]
-> **Job Market Advantage**: These concepts are in high demand. Companies are actively seeking engineers who understand GitOps, Helm, and Kubernetes. This knowledge gives you a significant advantage in interviews.
+### Backup and Recovery
 
-## 🚀 What We Want to Learn Next
+Important components to backup:
 
-### 1. **Advanced Monitoring**
-- Prometheus metrics collection
-- Grafana dashboards
-- Alerting and notification systems
+- Sealed secrets private keys
+- ArgoCD configuration
+- Database credentials
+- OAuth application settings
 
-### 2. **Enhanced Security**
-- Service mesh (Istio)
-- Mutual TLS between services
-- Advanced secrets management
-
-### 3. **Scaling Strategies**
-- Horizontal pod autoscaling
-- Database sharding
-- Caching layers (Redis)
-
-### 4. **Advanced CI/CD**
-- Automated testing
-- Blue-green deployments
-- Security scanning
-
-> [!TIP]
-> **Learning Path**: Start with monitoring - it's the foundation for everything else. You can't optimize what you can't measure.
-
-## 🤝 Our Learning Journey Reflection
-
-### How We Learned
-
-1. **Started Simple**: Basic scripts and containers
-2. **Added Complexity**: Kubernetes and Helm
-3. **Implemented GitOps**: ArgoCD and automated deployments
-4. **Production Ready**: Security, monitoring, and troubleshooting
-
-### Our Biggest Challenges
-
-- **Challenge**: Understanding the relationship between Helm and ArgoCD
-  - **Solution**: Built simple examples and experimented
-- **Challenge**: Managing secrets securely
-  - **Solution**: Learned Kubernetes secrets and external tools
-- **Challenge**: Debugging deployment issues
-  - **Solution**: Built comprehensive troubleshooting scripts
-
-### What We'd Do Differently
-
-- **Start with Helm earlier**: It would have saved us weeks of YAML debugging
-- **Implement monitoring from day one**: Debugging without metrics is painful
-- **Use more automated testing**: Manual testing doesn't scale
-
-> [!NOTE]
-> **Learning Insight**: The biggest lesson wasn't technical - it was understanding that deployment and operations are just as important as development. This mindset shift is crucial for cloud computing success.
-
-## 📚 Resources That Helped Us
-
-- [Docker Documentation](https://docs.docker.com/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [Helm Documentation](https://helm.sh/docs/)
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [GitOps Best Practices](https://www.gitops.tech/)
-
----
-
-## 🎉 Conclusion
-
-This project taught us that **cloud computing is about building reliable, scalable, and maintainable systems**. It's not just about writing code - it's about creating deployment processes that work consistently and can be trusted in production.
-
-**Our Key Takeaway**: The tools we learned (Helm, ArgoCD, GitOps) are used by companies worldwide to deploy thousands of services reliably. Understanding these concepts gives us a solid foundation for real-world cloud computing careers.
-
-> [!IMPORTANT]
-> **Final Message**: Cloud computing success isn't about memorizing commands - it's about understanding the principles behind reliable, scalable systems. Our 3-repository GitOps strategy demonstrates this understanding perfectly.
-
-**Happy Cloud Computing! ☁️**
-
-*— Harald, Patrick, and Susanne*
-
----
-
-## 🔗 Repository Links
-
-- **[INENPT-G1-Code](https://github.com/MCCE2024/INENPT-G1-Code)**: Application code and CI/CD pipelines
-- **[INENPT-G1-K8s](https://github.com/MCCE2024/INENPT-G1-K8s)**: Kubernetes manifests and Helm charts
-- **[INENPT-G1-Argo](https://github.com/MCCE2024/INENPT-G1-Argo)**: ArgoCD infrastructure and deployment configuration
+```bash
+# Backup sealed secrets private key
+kubectl get secret -n sealed-secrets-system sealed-secrets-key -o yaml > sealed-secrets-key-backup.yaml
+```

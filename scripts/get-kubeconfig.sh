@@ -90,6 +90,23 @@ chmod 600 ~/.kube/config  # Set proper permissions
 
 echo "✅ Kubeconfig copied to ~/.kube/config"
 
+# Copy to infrastructure folder for OpenTofu
+INFRASTRUCTURE_KUBECONFIG="../infrastructure/kubeconfig.yaml"
+echo "📋 Copying kubeconfig to infrastructure folder for OpenTofu..."
+
+# Backup existing infrastructure kubeconfig if it exists
+if [ -f "$INFRASTRUCTURE_KUBECONFIG" ]; then
+    INFRA_BACKUP_FILE="../infrastructure/kubeconfig.yaml.backup.$(date +%Y%m%d-%H%M%S)"
+    echo "📦 Backing up existing infrastructure kubeconfig to: $INFRA_BACKUP_FILE"
+    cp "$INFRASTRUCTURE_KUBECONFIG" "$INFRA_BACKUP_FILE"
+fi
+
+# Copy the new kubeconfig to infrastructure folder
+cp "$KUBECONFIG_FILE" "$INFRASTRUCTURE_KUBECONFIG"
+chmod 600 "$INFRASTRUCTURE_KUBECONFIG"  # Set proper permissions
+
+echo "✅ Kubeconfig copied to infrastructure folder: $INFRASTRUCTURE_KUBECONFIG"
+
 # Test default kubectl
 echo "🧪 Testing default kubectl (without --kubeconfig flag)..."
 if kubectl get nodes &> /dev/null; then
@@ -102,4 +119,9 @@ echo ""
 echo "🎉 Kubeconfig setup completed successfully!"
 echo "💡 You can now use kubectl directly: kubectl get nodes"
 echo "💡 Or use the local file: kubectl --kubeconfig=$KUBECONFIG_FILE <command>"
-echo "💡 Or export KUBECONFIG=$(pwd)/$KUBECONFIG_FILE" 
+echo "💡 Or export KUBECONFIG=$(pwd)/$KUBECONFIG_FILE"
+echo ""
+echo "📁 Kubeconfig locations:"
+echo "   • Local scripts folder: $KUBECONFIG_FILE"
+echo "   • Default kubectl: ~/.kube/config"
+echo "   • Infrastructure folder: $INFRASTRUCTURE_KUBECONFIG (for OpenTofu)" 
