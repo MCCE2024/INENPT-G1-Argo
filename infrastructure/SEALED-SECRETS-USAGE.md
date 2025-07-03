@@ -58,14 +58,14 @@ data:
 
 ```bash
 # From file
-kubeseal -f secret.yaml -w sealed-secret.yaml
+kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets-system -f secret.yaml -w sealed-secret.yaml
 
 # From kubectl command (recommended)
 kubectl create secret generic my-app-secret \
   --dry-run=client \
   --from-literal=username=admin \
   --from-literal=password=password \
-  -o yaml | kubeseal -o yaml > sealed-secret.yaml
+  -o yaml | kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets-system -o yaml > sealed-secret.yaml
 ```
 
 ### Step 3: Commit and Apply
@@ -122,7 +122,7 @@ kubeseal --scope cluster-wide -f secret.yaml -w sealed-secret.yaml
 #### Fetch Public Certificate
 
 ```bash
-kubeseal --fetch-cert > public.pem
+kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets-system --fetch-cert > public.pem
 ```
 
 #### Use Custom Certificate
