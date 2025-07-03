@@ -111,6 +111,7 @@ INENPT-G1-Argo/
 - **Sealed Secrets Controller** deployed
 - **GitHub Account** for OAuth applications
 - **Cloudflare Account** for DNS management (optional)
+- **Exo Account** for cluster deployment and DBaaS
 
 Required CLI tools:
 
