@@ -4,7 +4,8 @@
 # 1. Gets the database URL from Exoscale
 # 2. Prompts user for password
 # 3. Downloads CA certificate
-# 4. Updates API values file
+# 4. Creates sealed secret for database password (cluster-wide)
+# 5. Updates API values file
 
 set -e  # Exit on any error
 
@@ -13,15 +14,25 @@ DB_NAME="inenpt-g1-postgresql"
 ZONE="at-vie-1"
 API_VALUES_FILE="../applications/api/helm/values.yaml"
 CA_CERT_FILE="ca.pem"
+SEALED_SECRET_FILE="../secrets/api-db-sealed-secret.yaml"
 
-echo "🗄️  Setting up database configuration for API..."
+echo "🗄️  Setting up database configuration for API with Sealed Secrets..."
 echo ""
 
-# Check if exo CLI is available
+# Check if required tools are available
 if ! command -v exo &> /dev/null; then
     echo "❌ Error: exo CLI is not installed or not in PATH"
     exit 1
 fi
+
+if ! command -v kubeseal &> /dev/null; then
+    echo "❌ Error: kubeseal CLI is not installed or not in PATH"
+    echo "💡 Install kubeseal: https://github.com/bitnami-labs/sealed-secrets#installation"
+    exit 1
+fi
+
+# Create secrets directory if it doesn't exist
+mkdir -p ../secrets
 
 # Check if database exists
 echo "🔍 Checking if database exists..."
@@ -97,29 +108,60 @@ fi
 # Update values.yaml with CA certificate content
 echo "🔐 Adding CA certificate content to values.yaml..."
 
-# Create a temporary file with the CA certificate content properly indented
-TEMP_CERT_FILE=$(mktemp)
-cat "$CA_CERT_FILE" | sed 's/^/    /' > "$TEMP_CERT_FILE"
+# Check if CA certificate is already in values.yaml
+if grep -q "BEGIN CERTIFICATE" "$API_VALUES_FILE"; then
+    echo "💡 CA certificate already exists in values.yaml - replacing with fresh content"
+    
+    # Create a temporary file with the new certificate content
+    TEMP_CERT_FILE=$(mktemp)
+    cat "$CA_CERT_FILE" | sed 's/^/    /' > "$TEMP_CERT_FILE"
+    
+    # Use awk to replace the certificate content between caCert: | and the next non-indented line
+    awk '
+    /caCert: \|/ { 
+        print $0
+        # Read and print the new certificate content
+        while ((getline line < "'$TEMP_CERT_FILE'") > 0) {
+            print line
+        }
+        close("'$TEMP_CERT_FILE'")
+        # Skip existing certificate content
+        while (getline > 0 && /^    /) continue
+        if (NF > 0) print $0
+        next
+    }
+    { print }
+    ' "$API_VALUES_FILE" > "${API_VALUES_FILE}.tmp" && mv "${API_VALUES_FILE}.tmp" "$API_VALUES_FILE"
+    
+    # Clean up temporary files
+    rm -f "$TEMP_CERT_FILE"
+else
+    echo "💡 Adding CA certificate content for the first time"
+    
+    # Create a temporary file with the CA certificate content properly indented
+    TEMP_CERT_FILE=$(mktemp)
+    cat "$CA_CERT_FILE" | sed 's/^/    /' > "$TEMP_CERT_FILE"
 
-# Create a new values file with the CA certificate content
-TEMP_VALUES_FILE=$(mktemp)
+    # Create a new values file with the CA certificate content
+    TEMP_VALUES_FILE=$(mktemp)
 
-# Process the values file line by line
-while IFS= read -r line; do
-    echo "$line" >> "$TEMP_VALUES_FILE"
-    # If we find the caCert: | line, append the certificate content
-    if [[ "$line" == *"caCert: |"* ]]; then
-        cat "$TEMP_CERT_FILE" >> "$TEMP_VALUES_FILE"
-    fi
-done < "$API_VALUES_FILE"
+    # Process the values file line by line
+    while IFS= read -r line; do
+        echo "$line" >> "$TEMP_VALUES_FILE"
+        # If we find the caCert: | line, append the certificate content
+        if [[ "$line" == *"caCert: |"* ]]; then
+            cat "$TEMP_CERT_FILE" >> "$TEMP_VALUES_FILE"
+        fi
+    done < "$API_VALUES_FILE"
 
-# Replace the original file
-mv "$TEMP_VALUES_FILE" "$API_VALUES_FILE"
+    # Replace the original file
+    mv "$TEMP_VALUES_FILE" "$API_VALUES_FILE"
 
-# Clean up temporary files
-rm -f "$TEMP_CERT_FILE"
+    # Clean up temporary files
+    rm -f "$TEMP_CERT_FILE"
+fi
 
-echo "✅ CA certificate content added to values.yaml"
+echo "✅ CA certificate content updated in values.yaml"
 echo "💡 The Helm template will now create ConfigMaps automatically when deployed"
 
 # Check if API values file exists
@@ -133,14 +175,26 @@ BACKUP_FILE="${API_VALUES_FILE}.backup.$(date +%Y%m%d-%H%M%S)"
 echo "📦 Backing up API values file to: $BACKUP_FILE"
 cp "$API_VALUES_FILE" "$BACKUP_FILE"
 
-# Create Kubernetes secret for database password
-echo "🔐 Creating Kubernetes secret for database password..."
+# Create sealed secret for database password (cluster-wide)
+echo "🔐 Creating sealed secret for database password..."
+echo "💡 Using cluster-wide scope so it can be accessed from all namespaces"
+
+# Create the sealed secret using kubeseal with cluster-wide scope
+# This allows the secret to be accessed from any namespace
 kubectl create secret generic api-db-secret \
     --from-literal=password="$DB_PASSWORD" \
     --namespace=default \
-    --dry-run=client -o yaml | kubectl apply -f -
+    --dry-run=client -o yaml | \
+    kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets-system --scope cluster-wide -o yaml > "$SEALED_SECRET_FILE"
 
-echo "✅ Database secret created/updated in Kubernetes"
+echo "✅ Sealed secret created: $SEALED_SECRET_FILE"
+echo "🔒 Secret is cluster-wide and can be accessed from all namespaces"
+
+# Apply the sealed secret to the cluster
+echo "🚀 Applying sealed secret to cluster..."
+kubectl apply -f "$SEALED_SECRET_FILE"
+
+echo "✅ Sealed secret applied successfully!"
 
 # Update API values file (without password)
 echo "📝 Updating API values file..."
@@ -152,7 +206,7 @@ sed -i.bak \
     -e "/^database:/,/^[^ ]/ { s|  port:.*|  port: $DB_PORT|; }" \
     -e "/^database:/,/^[^ ]/ { s|  name:.*|  name: \"$DB_DATABASE\"|; }" \
     -e "/^database:/,/^[^ ]/ { s|  user:.*|  user: \"$DB_USER\"|; }" \
-    -e "/^database:/,/^[^ ]/ { s|  password:.*|  password: \"\" # Set via secret|; }" \
+    -e "/^database:/,/^[^ ]/ { s|  password:.*|  password: \"\" # Set via sealed secret|; }" \
     "$API_VALUES_FILE"
 
 echo "✅ API values file updated successfully!"
@@ -163,14 +217,22 @@ echo "🗄️  Database Host: $DB_HOST"
 echo "🚪 Database Port: $DB_PORT"
 echo "👤 Database User: $DB_USER"
 echo "💾 Database Name: $DB_DATABASE"
-echo "🔐 Password Secret: api-db-secret (in Kubernetes)"
+echo "🔐 Password Sealed Secret: api-db-secret (cluster-wide)"
 echo "📜 CA Certificate: $CA_CERT_FILE"
 echo "📝 Values File: $API_VALUES_FILE"
 echo "📦 Backup File: $BACKUP_FILE"
+echo "🔒 Sealed Secret File: $SEALED_SECRET_FILE"
 echo ""
-echo "🎉 Database setup completed successfully!"
+echo "🎉 Database setup with Sealed Secrets completed successfully!"
 echo "💡 Next steps:"
-echo "   1. Commit the updated values file to git (password is now secure!)"
-echo "   2. Deploy/sync the API application in ArgoCD"
-echo "   3. The CA certificate is available at: $CA_CERT_FILE"
-echo "   4. Password is stored securely in Kubernetes secret: api-db-secret" 
+echo "   1. Commit the sealed secret file to git - it's safe to store in version control!"
+echo "   2. Commit the updated values file to git"
+echo "   3. Deploy/sync the API application in ArgoCD"
+echo "   4. The sealed secret will be automatically decrypted by the sealed-secrets controller"
+echo "   5. Applications in any namespace can now reference the 'api-db-secret' secret"
+echo ""
+echo "🔒 Security Notes:"
+echo "   - The sealed secret is encrypted and safe to store in Git"
+echo "   - Only the sealed-secrets controller in your cluster can decrypt it"
+echo "   - The secret is cluster-wide, so it can be accessed from all namespaces"
+echo "   - Regular secret 'api-db-secret' will be created automatically in each namespace that needs it" 

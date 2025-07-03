@@ -64,10 +64,22 @@ echo "ArgoCD Domain: $ARGOCD_DOMAIN"
 
 # Get the external IP of the consumer service
 echo "📡 Getting consumer service external IP..."
-CONSUMER_IP=$(kubectl get service consumer -n tenant-a -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
 
-if [ -z "$CONSUMER_IP" ] || [ "$CONSUMER_IP" = "null" ]; then
-    # If LoadBalancer IP is not available, get the node IP and NodePort
+# Check if consumer service is LoadBalancer or NodePort
+CONSUMER_SERVICE_TYPE=$(kubectl get service tenant-a-consumer -n tenant-a -o jsonpath='{.spec.type}' 2>/dev/null)
+
+if [ "$CONSUMER_SERVICE_TYPE" = "LoadBalancer" ]; then
+    CONSUMER_IP=$(kubectl get service tenant-a-consumer -n tenant-a -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+    if [ -n "$CONSUMER_IP" ] && [ "$CONSUMER_IP" != "null" ]; then
+        echo "📍 Using LoadBalancer IP for consumer: $CONSUMER_IP"
+    else
+        echo "⚠️  LoadBalancer IP not ready, falling back to Node IP"
+        CONSUMER_SERVICE_TYPE="NodePort"
+    fi
+fi
+
+if [ "$CONSUMER_SERVICE_TYPE" = "NodePort" ] || [ -z "$CONSUMER_IP" ]; then
+    # For NodePort services, use the node IP
     NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
     if [ -z "$NODE_IP" ]; then
         NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
@@ -79,9 +91,7 @@ if [ -z "$CONSUMER_IP" ] || [ "$CONSUMER_IP" = "null" ]; then
     fi
     
     CONSUMER_IP="$NODE_IP"
-    echo "📍 Using Node IP for consumer: $CONSUMER_IP"
-else
-    echo "📍 Using LoadBalancer IP for consumer: $CONSUMER_IP"
+    echo "📍 Using Node IP for consumer (NodePort service): $CONSUMER_IP"
 fi
 
 # Get the external IP of the ArgoCD service
