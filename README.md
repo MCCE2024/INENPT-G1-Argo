@@ -131,9 +131,9 @@ Required CLI tools:
 # 2. Deploy ArgoCD + Sealed Secrets
 cd infrastructure
 terraform apply
-cd ..
 
 # 3. Get ArgoCD access information
+cd ..
 ./scripts/get-argocd-info.sh
 ```
 
@@ -147,6 +147,8 @@ cd ..
 # 5. Setup OAuth for all tenants
 ./scripts/setup-multi-tenant-oauth.sh all
 # Creates: tenant-*-oauth-sealed-secret.yaml (one per tenant)
+
+#Push the secret files and the changed value file of the api to the repo
 ```
 
 #### Phase 3: Application Deployment
@@ -188,7 +190,7 @@ Sealed Secrets are encrypted Kubernetes secrets that can only be decrypted by th
 | `tenant-*-api-db-sealed-secret.yaml` | Per-tenant | Database credentials       |
 | `tenant-*-oauth-sealed-secret.yaml`  | Per-tenant | GitHub OAuth configuration |
 
-### Usage
+### Manual creation (if needed)
 
 ```bash
 # Create sealed secret manually
@@ -207,6 +209,8 @@ kubectl apply -f my-sealed-secret.yaml
 ## 🏢 Multi-Tenant Configuration
 
 ### Tenant Setup
+
+This can also be setup without DNS (just use the IPs).
 
 Each tenant requires:
 
@@ -255,6 +259,7 @@ Configures database connection with sealed secrets:
 
 - Retrieves database credentials from Exoscale
 - Downloads CA certificate
+- Adds CA Certificate to API Helm values.yaml
 - Creates sealed secrets for each tenant namespace
 - Updates API Helm values
 
@@ -426,8 +431,6 @@ kubectl logs -n tenant-a deployment/consumer
 kubectl logs -n tenant-a deployment/producer
 ```
 
-## 🆘 Support
-
 ### Getting Help
 
 1. **Check Application Logs**: Review pod logs in tenant namespaces
@@ -448,20 +451,3 @@ Important components to backup:
 # Backup sealed secrets private key
 kubectl get secret -n sealed-secrets-system sealed-secrets-key -o yaml > sealed-secrets-key-backup.yaml
 ```
-
-## 📝 Contributing
-
-When making changes:
-
-1. **Test Locally**: Validate changes in development environment
-2. **Update Documentation**: Keep README and scripts documentation current
-3. **Security Review**: Ensure secrets are properly encrypted
-4. **GitOps Workflow**: All changes should go through Git
-
-## 📄 License
-
-This project is part of the INENPT-G1 course work.
-
----
-
-**🔐 Remember**: All sealed secret files in this repository are encrypted and safe to commit to version control. Only the sealed-secrets controller in your cluster can decrypt them.
