@@ -4,7 +4,7 @@
 # 1. Gets the database URL from Exoscale
 # 2. Prompts user for password
 # 3. Downloads CA certificate
-# 4. Creates sealed secret for database password (cluster-wide)
+# 4. Creates sealed secrets for database password (one per tenant namespace)
 # 5. Updates API values file
 
 set -e  # Exit on any error
@@ -14,7 +14,6 @@ DB_NAME="inenpt-g1-postgresql"
 ZONE="at-vie-1"
 API_VALUES_FILE="../applications/api/helm/values.yaml"
 CA_CERT_FILE="ca.pem"
-SEALED_SECRET_FILE="../secrets/api-db-sealed-secret.yaml"
 
 echo "🗄️  Setting up database configuration for API with Sealed Secrets..."
 echo ""
@@ -175,26 +174,48 @@ BACKUP_FILE="${API_VALUES_FILE}.backup.$(date +%Y%m%d-%H%M%S)"
 echo "📦 Backing up API values file to: $BACKUP_FILE"
 cp "$API_VALUES_FILE" "$BACKUP_FILE"
 
-# Create sealed secret for database password (cluster-wide)
-echo "🔐 Creating sealed secret for database password..."
-echo "💡 Using cluster-wide scope so it can be accessed from all namespaces"
+# Create sealed secrets for database password (one per tenant namespace)
+echo "🔐 Creating sealed secrets for database password..."
+echo "💡 Creating separate sealed secrets for each tenant namespace"
 
-# Create the sealed secret using kubeseal with cluster-wide scope
-# This allows the secret to be accessed from any namespace
-kubectl create secret generic api-db-secret \
-    --from-literal=password="$DB_PASSWORD" \
-    --namespace=default \
-    --dry-run=client -o yaml | \
-    kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets-system --scope cluster-wide -o yaml > "$SEALED_SECRET_FILE"
+# Define tenant namespaces
+TENANT_NAMESPACES=("tenant-a" "tenant-b" "tenant-c" "tenant-d")
 
-echo "✅ Sealed secret created: $SEALED_SECRET_FILE"
-echo "🔒 Secret is cluster-wide and can be accessed from all namespaces"
+# Create sealed secret for each tenant namespace
+for namespace in "${TENANT_NAMESPACES[@]}"; do
+    echo "🔒 Creating sealed secret for namespace: $namespace"
+    
+    # Create namespace if it doesn't exist
+    if kubectl get namespace "$namespace" &>/dev/null; then
+        echo "   ✅ Namespace $namespace already exists"
+    else
+        echo "   📦 Creating namespace: $namespace"
+        kubectl create namespace "$namespace"
+    fi
+    
+    # Define sealed secret file path for this tenant
+    TENANT_SEALED_SECRET_FILE="../secrets/${namespace}-api-db-sealed-secret.yaml"
+    
+    # Create the sealed secret (namespace-scoped)
+    kubectl create secret generic api-db-secret \
+        --from-literal=password="$DB_PASSWORD" \
+        --namespace="$namespace" \
+        --dry-run=client -o yaml | \
+        kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets-system -o yaml > "$TENANT_SEALED_SECRET_FILE"
+    
+    echo "   ✅ Sealed secret created: $TENANT_SEALED_SECRET_FILE"
+    
+    # Apply the sealed secret to the cluster
+    echo "   🚀 Applying sealed secret to cluster..."
+    if kubectl apply -f "$TENANT_SEALED_SECRET_FILE"; then
+        echo "   ✅ Sealed secret applied successfully for $namespace"
+    else
+        echo "   ❌ Failed to apply sealed secret for $namespace"
+    fi
+    echo ""
+done
 
-# Apply the sealed secret to the cluster
-echo "🚀 Applying sealed secret to cluster..."
-kubectl apply -f "$SEALED_SECRET_FILE"
-
-echo "✅ Sealed secret applied successfully!"
+echo "✅ All tenant database sealed secrets created and applied successfully!"
 
 # Update API values file (without password)
 echo "📝 Updating API values file..."
@@ -217,22 +238,25 @@ echo "🗄️  Database Host: $DB_HOST"
 echo "🚪 Database Port: $DB_PORT"
 echo "👤 Database User: $DB_USER"
 echo "💾 Database Name: $DB_DATABASE"
-echo "🔐 Password Sealed Secret: api-db-secret (cluster-wide)"
+echo "🔐 Password Sealed Secrets: api-db-secret (per tenant namespace)"
 echo "📜 CA Certificate: $CA_CERT_FILE"
 echo "📝 Values File: $API_VALUES_FILE"
 echo "📦 Backup File: $BACKUP_FILE"
-echo "🔒 Sealed Secret File: $SEALED_SECRET_FILE"
+echo "🔒 Sealed Secret Files:"
+for namespace in "${TENANT_NAMESPACES[@]}"; do
+    echo "   - ../secrets/${namespace}-api-db-sealed-secret.yaml"
+done
 echo ""
 echo "🎉 Database setup with Sealed Secrets completed successfully!"
 echo "💡 Next steps:"
-echo "   1. Commit the sealed secret file to git - it's safe to store in version control!"
+echo "   1. Commit the sealed secret files to git - they're safe to store in version control!"
 echo "   2. Commit the updated values file to git"
-echo "   3. Deploy/sync the API application in ArgoCD"
-echo "   4. The sealed secret will be automatically decrypted by the sealed-secrets controller"
-echo "   5. Applications in any namespace can now reference the 'api-db-secret' secret"
+echo "   3. Deploy/sync the API applications in ArgoCD"
+echo "   4. The sealed secrets will be automatically decrypted by the sealed-secrets controller"
+echo "   5. Each tenant's API application can now reference the 'api-db-secret' secret in their namespace"
 echo ""
 echo "🔒 Security Notes:"
-echo "   - The sealed secret is encrypted and safe to store in Git"
-echo "   - Only the sealed-secrets controller in your cluster can decrypt it"
-echo "   - The secret is cluster-wide, so it can be accessed from all namespaces"
-echo "   - Regular secret 'api-db-secret' will be created automatically in each namespace that needs it" 
+echo "   - The sealed secrets are encrypted and safe to store in Git"
+echo "   - Only the sealed-secrets controller in your cluster can decrypt them"
+echo "   - Each tenant has their own sealed secret in their namespace for proper isolation"
+echo "   - Regular secret 'api-db-secret' will be created automatically in each tenant namespace" 
