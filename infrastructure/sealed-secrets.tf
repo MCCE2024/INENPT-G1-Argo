@@ -81,7 +81,7 @@ resource "helm_release" "sealed_secrets" {
       }
       
       # Key renewal and rotation settings
-      keyrenewperiod = "30d"  # Renew keys every 30 days
+      keyrenewperiod = "720h"  # Renew keys every 30 days (720 hours)
       
       # Metrics configuration
       metrics = {
