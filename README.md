@@ -46,6 +46,7 @@
 - [🚨 Troubleshooting Guide](#troubleshooting-guide)
 - [📚 Resources & References](#resources--references)
 - [🎯 Professor's Assessment Guide](#professors-assessment-guide)
+- [🚀 Possible Improvements](#possible-improvements)
 
 ## 🎯 Repository Purpose & Role
 
@@ -61,7 +62,7 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 │                    COMPLETE GITOPS PIPELINE                 │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  📦 [INENPT-G1-Code]     🏗️ [INENPT-G1-K8s]     🎭 [INENPT-G1-Argo] │
+│📦 [INENPT-G1-Code 🏗️ [INENPT-G1-K8s]  🎭 [INENPT-G1-Argo] │
 │  Application Code        Infrastructure         GitOps      │
 │  • Source Code          • Terraform Configs    • ArgoCD     │
 │  • Docker Images        • Kubernetes Cluster   • Helm Charts│
@@ -82,13 +83,13 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 > Each repository in the 3-repo strategy has a distinct role. Mixing responsibilities can lead to confusion and deployment errors.
 
 ### **Repository 1: [INENPT-G1-Code](https://github.com/MCCE2024/INENPT-G1-Code)**
-- **Purpose**: Application source code and CI/CD pipelines
-- **Contains**: Node.js applications, Docker configurations, GitHub Actions
+- **Purpose**: Application source code and CI/CD pipelines (Docker Images to Dockerregistry)
+- **Contains**: Node.js applications, Docker configurations, GitHub Actions for Docker Image Build
 - **Output**: Container images pushed to GitHub Container Registry
 
 ### **Repository 2: [INENPT-G1-K8s](https://github.com/MCCE2024/INENPT-G1-K8s)**
-- **Purpose**: Infrastructure as Code foundation
-- **Contains**: Terraform configurations for cloud infrastructure
+- **Purpose**: Infrastructure as Code foundation - First Setup of K8S Cluster and PostgreSQL DB
+- **Contains**: Opentofu configurations for cloud infrastructure
 - **Output**: Production-ready Kubernetes cluster and database
 
 ### **Repository 3: [INENPT-G1-Argo] (This Repository)**
@@ -327,6 +328,23 @@ spec:
 
 **Connection**: This repository deploys applications to the Kubernetes cluster and database provisioned by INENPT-G1-K8s.
 
+## 🔗 How This Repository Integrates with the Others
+
+- **INENPT-G1-Code**:  
+  - Developers push code to this repo.
+  - CI/CD workflows build Docker images for each microservice and push them to the GitHub Container Registry (GHCR).
+  - (Recommended) After a successful build, a workflow or manual process updates the image tag in the Helm values files in this (INENPT-G1-Argo) repository, ensuring ArgoCD deploys the latest version.
+
+- **INENPT-G1-K8s**:  
+  - This repo provisions the Kubernetes cluster and managed PostgreSQL database using OpenTofu (or Terraform).
+  - The cluster endpoint and DB connection info are used by ArgoCD and the deployed applications.
+  - Infrastructure changes (e.g., scaling, networking) are managed here and are independent of application deployment.
+
+- **INENPT-G1-Argo (this repo)**:  
+  - Contains Helm charts, ArgoCD ApplicationSets, and Sealed Secrets for all tenants and services.
+  - ArgoCD continuously syncs the state of the cluster to match the configuration in this repo.
+  - When image tags are updated here, ArgoCD automatically deploys the new version to the cluster provisioned by INENPT-G1-K8s.
+
 ## 📊 Learning Objectives & Course Requirements
 
 > [!TIP]
@@ -541,3 +559,23 @@ kubectl get events -n argocd --sort-by='.lastTimestamp'
 ---
 
 *This repository is part of a comprehensive 3-repository GitOps strategy demonstrating modern cloud computing principles and production-ready deployment automation.*
+
+## 🚀 Possible Improvements
+
+- **ArgoCD GitHub Action for ApplicationSet Templates** (INENPT-G1-Argo):
+  - Automate the generation and update of ApplicationSet YAMLs using a GitHub Action, reducing manual errors and improving scalability for new tenants/services.
+
+- **GitHub Action for Tag Update** (INENPT-G1-Code & INENPT-G1-Argo):
+  - After a successful image build, automatically create a PR in INENPT-G1-Argo to update the image tag in Helm values, ensuring seamless GitOps deployment.
+
+- **Secure Database IP Filtering** (INENPT-G1-K8s):
+  - Restrict PostgreSQL access to only the Kubernetes cluster or specific CIDRs, rather than 0.0.0.0/0, to enhance security.
+
+- **Proxy for Request Forwarding & JWT Generation** (INENPT-G1-Code):
+  - Implement a proxy service to route requests to the correct tenant namespace based on URL, and optionally generate JWT tokens for secure, multi-tenant authentication.
+
+### Additional Considerations
+- All improvements are viable and align with best practices for automation, security, and scalability.
+- Ensure proper testing and review for automation (GitHub Actions) to avoid accidental disruptions.
+- For security enhancements, validate network policies and access controls after changes.
+- Proxy and JWT logic should be thoroughly tested for security vulnerabilities and correct multi-tenancy behavior.
