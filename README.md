@@ -1,6 +1,6 @@
 # INENPT-G1-Argo: GitOps Deployment Repository
 
-03.07.2025
+04.07.2025
 
 > **Part 3 of 3: GitOps Automation** 🎭  
 > This repository contains the **GitOps deployment** and **application lifecycle management** components of our multi-tenant cloud-native application. It's designed to work seamlessly with our [Application Code Repository](https://github.com/MCCE2024/INENPT-G1-Code) and [Infrastructure Repository](https://github.com/MCCE2024/INENPT-G1-K8s) to create a complete GitOps pipeline.
