@@ -204,21 +204,26 @@ INENPT-G1-Argo/
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: api-tenant-a
+  name: argocd-applicationsets
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/MCCE2024/INENPT-G1-Argo
-    path: applications/api/helm
-    targetRevision: HEAD
+    repoURL: https://github.com/MCCE2024/INENPT-G1-Argo.git
+    targetRevision: main
+    path: applicationsets
+    directory:
+      recurse: false
+      include: "master-applicationset.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: tenant-a
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
 ```
 
 **Learning Value**: Understanding GitOps principles and declarative deployment automation.
@@ -245,18 +250,23 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: tenant-applications
+  name: tenant-a-applications
+  namespace: argocd
 spec:
+  goTemplate: false
   generators:
     - list:
         elements:
           - tenant: tenant-a
             port: 30000
-          - tenant: tenant-b
-            port: 30001
-  template:
+            ...
+ template:
     metadata:
-      name: "{{tenant}}-api"
+      name: "{{tenant}}-{{app}}"
+      labels:
+        tenant: "{{tenant}}"
+        app: "{{app}}"
+        ....
     spec:
       source:
         path: applications/api/helm
@@ -296,24 +306,26 @@ exo config
 
 #Create IAM Role in Exoscale for access
 
+cd scripts
+
 # 1. Get Kubernetes cluster access
-./scripts/get-kubeconfig.sh
+./get-kubeconfig.sh
 
 # 2. Deploy ArgoCD + Sealed Secrets
-cd infrastructure
+cd ../infrastructure
 tofu init
 tofu plan
 tofu apply
 
 # 3. Get ArgoCD access information
-cd scripts
+cd ../scripts
 ./get-argocd-info.sh
 ```
 
 ### **Step 2: Configure Secrets**
 
 ```bash
-# Check if kubeseal is installed if not
+# Check if kubeseal is installed, if not install:
 wget -O kubeseal https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.0/kubeseal-0.26.0-linux-amd64.tar.gz
 
 tar -xzf kubeseal && ls -la
@@ -323,7 +335,7 @@ sudo mv kubeseal /usr/local/bin/ && chmod +x /usr/local/bin/kubeseal
 # Check if installation worked
 kubeseal --version
 
-# check if yd is installed if not 
+# check if yd is installed, if not install:
 wget -O yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
 
 sudo mv yq /usr/local/bin/ && chmod +x /usr/local/bin/yq
@@ -338,6 +350,7 @@ yq --version
 ```
 
 ### **Step 3: Deploy ApplicationSets**
+
 ```bash
 # 5. Deploy ApplicationSets
 cd ..
@@ -346,17 +359,27 @@ kubectl apply -f argocd-applicationsets.yaml
 # 6. Deploy sync configuration
 kubectl apply -f argocd-sync-config.yaml
 ```
+
 ### **Step 4: OAuth Installation**
+
+This is a bit of a chicken or the egg dilemma.
+We can't create the oauth applications because we don't know the IPs
+of the deployment, before we deploy it on the cluster.
+But the deployment doesn't work without the oauth applications.
+
 ```bash
-# get a list of all services for external host IP
+# get the external ip of the consumer
 kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}'
+
+# test the IPin the browser
+# http://IP:30000 (for tenant-a)
 
 # 7. Setup OAuth for all tenants
 
 # Github Ui --> Settings --> Developer Settings --> OAuth App
 # IP address plus port e.g. http://194.182.173.161:30000
 # and for callback http://194.182.173.161:30000/auth/github/callback
-# find here Client ID and generate new Client secret (this only shows once)
+# copy the Client ID and generate a new Client secret (client secret can only be copied before a reload of the site)
 
 # For all tenants
 ./setup-multi-tenant-oauth.sh all
@@ -365,9 +388,9 @@ kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP
 ./setup-multi-tenant-oauth.sh tenant-a
 
 # Creates: tenant-*-oauth-sealed-secret.yaml (one per tenant)
-
-# Push the secret files and the changed value file of the api to the repo
 ```
+
+## ⚠️ IMPORTANT: Push the secret files and the changed value.yaml file of the api helm chart to the repo
 
 ### **Step 4: DNS Configuration (Optional)**
 
@@ -428,8 +451,8 @@ Each tenant requires:
 1. **GitHub OAuth Application**
 
    - Application Name: `MCCE Tenant X`
-   - Homepage URL: `http://mcce.uname.at:3000X`
-   - Callback URL: `http://mcce.uname.at:3000X/auth/github/callback`
+   - Homepage URL: `http://example.com:3000X`
+   - Callback URL: `http://example.com:3000X/auth/github/callback`
 
 2. **Kubernetes Namespace**
 
@@ -444,10 +467,10 @@ Each tenant requires:
 
 After deployment:
 
-- **Tenant A**: http://mcce.uname.at:30000
-- **Tenant B**: http://mcce.uname.at:30001
-- **Tenant C**: http://mcce.uname.at:30002
-- **Tenant D**: http://mcce.uname.at:30003
+- **Tenant A**: http://example.com:30000
+- **Tenant B**: http://example.com:30001
+- **Tenant C**: http://example.com:30002
+- **Tenant D**: http://example.com:30003
 
 ### Adding New Tenants
 
@@ -455,6 +478,7 @@ After deployment:
 2. Configure GitHub OAuth application
 3. Run setup scripts for new tenant
 4. Update ApplicationSet configurations
+5. Push new files to git
 
 ## 📜 Scripts Documentation
 
@@ -517,14 +541,17 @@ kubectl get sealedsecret api-db-secret -n tenant-a -o yaml
 ### Updating Secrets
 
 ```bash
+# Change to scripts directory
+cd scripts
+
 # Update database secrets
-./scripts/setup-database.sh
+./setup-database.sh
 
 # Update OAuth secrets for specific tenant
-./scripts/setup-multi-tenant-oauth.sh tenant-a
+./setup-multi-tenant-oauth.sh tenant-a
 
 # Update all OAuth secrets
-./scripts/setup-multi-tenant-oauth.sh all
+./setup-multi-tenant-oauth.sh all
 ```
 
 ### Monitoring Applications
