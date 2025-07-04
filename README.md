@@ -301,42 +301,79 @@ exo config
 
 # 2. Deploy ArgoCD + Sealed Secrets
 cd infrastructure
+tofu init
+tofu plan
 tofu apply
 
 # 3. Get ArgoCD access information
-cd ..
-./scripts/get-argocd-info.sh
+cd scripts
+./get-argocd-info.sh
 ```
 
 ### **Step 2: Configure Secrets**
 
 ```bash
+# Check if kubeseal is installed if not
+wget -O kubeseal https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.0/kubeseal-0.26.0-linux-amd64.tar.gz
+
+tar -xzf kubeseal && ls -la
+
+sudo mv kubeseal /usr/local/bin/ && chmod +x /usr/local/bin/kubeseal
+
+# Check if installation worked
+kubeseal --version
+
+# check if yd is installed if not 
+wget -O yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+
+sudo mv yq /usr/local/bin/ && chmod +x /usr/local/bin/yq
+
+# Check if installation worked
+yq --version
+
 # 4. Setup database connection with sealed secrets
-./scripts/setup-database.sh
+
+./setup-database.sh
 # Creates: tenant-*-api-db-sealed-secret.yaml (one per tenant)
-
-# 5. Setup OAuth for all tenants
-./scripts/setup-multi-tenant-oauth.sh all
-# Creates: tenant-*-oauth-sealed-secret.yaml (one per tenant)
-
-#Push the secret files and the changed value file of the api to the repo
 ```
 
 ### **Step 3: Deploy ApplicationSets**
-
 ```bash
-# 6. Deploy ApplicationSets
+# 5. Deploy ApplicationSets
+cd ..
 kubectl apply -f argocd-applicationsets.yaml
 
-# 7. Deploy sync configuration
+# 6. Deploy sync configuration
 kubectl apply -f argocd-sync-config.yaml
+```
+### **Step 4: OAuth Installation**
+```bash
+# get a list of all services for external host IP
+kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}'
+
+# 7. Setup OAuth for all tenants
+
+# Github Ui --> Settings --> Developer Settings --> OAuth App
+# IP address plus port e.g. http://194.182.173.161:30000
+# and for callback http://194.182.173.161:30000/auth/github/callback
+# find here Client ID and generate new Client secret (this only shows once)
+
+# For all tenants
+./setup-multi-tenant-oauth.sh all
+
+# Optional for one tenant
+./setup-multi-tenant-oauth.sh tenant-a
+
+# Creates: tenant-*-oauth-sealed-secret.yaml (one per tenant)
+
+# Push the secret files and the changed value file of the api to the repo
 ```
 
 ### **Step 4: DNS Configuration (Optional)**
 
 ```bash
 # 8. Setup Cloudflare DNS
-./scripts/setup-cloudflare-dns.sh <api-token> <zone-id>
+./setup-cloudflare-dns.sh <api-token> <zone-id>
 ```
 
 > [!CAUTION]

@@ -32,7 +32,7 @@ env:
 
 # External Database configuration (Aiven Cloud)
 database:
-  host: "inenpt-g1-postgresql-exoscale-8d4daa3a-4052-4544-b383-b09812875.k.aivencloud.com"
+  host: "inenpt-g1-postgresql-exoscale-43335956-5350-4ab0-9b26-1f870f09d.j.aivencloud.com"
   port: 21699
   name: "defaultdb"
   user: "avnadmin"
@@ -42,30 +42,30 @@ database:
   # CA Certificate content - will be populated by setup script or manually
   caCert: |
     -----BEGIN CERTIFICATE-----
-    MIIEUDCCArigAwIBAgIUfq5Sjzg6ciOayhg4s8G3o+woK/cwDQYJKoZIhvcNAQEM
-    BQAwQDE+MDwGA1UEAww1ODI5NDUyZjYtMjU2MS00MjYxLTg3MmYtYWRjMTgyZTU5
-    MjVhIEdFTiAxIFByb2plY3QgQ0EwHhcNMjUwNjIzMTgwOTI5WhcNMzUwNjIxMTgw
-    OTI5WjBAMT4wPAYDVQQDDDU4Mjk0NTJmNi0yNTYxLTQyNjEtODcyZi1hZGMxODJl
-    NTkyNWEgR0VOIDEgUHJvamVjdCBDQTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCC
-    AYoCggGBAPLor8gjiGOtXxlQKy1pCEDpbPnTghL/3s4yRvLWl3ydXZjRdKdQ/cOR
-    H/yz2qdvF5E5U59byzkgrqWYhhoK2H5FY71VpZHVwx2qXVT0KVF5UerApGo+hUc2
-    Gtih6ZcmYYUMeijqWZGPQi91s3ElcSDRG39WkuB2GADlqWCAP1oWOXpqhFEBnO1Z
-    8Bw5OLQwx8P9U/YNoBAWxvlqaLeQGhccZAKuV3kqcW9k/3gZVx98oKGOcXW16Z+B
-    Yl2opUrjThw1/JwX167g90kv2acDEnv9HVo96kwVo18Rm88i17X8b9hIHipHHTlc
-    o0c3kEmAtt4gxqNzlHcTcHz6yA70n0V4zgK5yXMdsk+7OWs3uflaMCBZtg7HRq3W
-    4nqkG0t+t/JxLHotA4I2W7keqVIwzsHiDrUGfSYm9FvJhyfqQOW3n0rG14+wfk5s
-    UexBstmDch6ENyJkKENaG5dnVyCJVwpxZD/HLo+ZbY9CJDl7XEwGDsY69lUv0tBt
-    uy4s4g9P7QIDAQABo0IwQDAdBgNVHQ4EFgQU5M4fGPM7ErzVWtXV2w265cIiNpsw
+    MIIEUDCCArigAwIBAgIUUdB15YE5OlwzG9L4cbsi26Wgo4QwDQYJKoZIhvcNAQEM
+    BQAwQDE+MDwGA1UEAww1MTIxNDdiYmItZTQ2My00ZTQ5LWFjY2MtMGUzMjEwYzBm
+    MGEwIEdFTiAxIFByb2plY3QgQ0EwHhcNMjUwNzA0MTc0MjQyWhcNMzUwNzAyMTc0
+    MjQyWjBAMT4wPAYDVQQDDDUxMjE0N2JiYi1lNDYzLTRlNDktYWNjYy0wZTMyMTBj
+    MGYwYTAgR0VOIDEgUHJvamVjdCBDQTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCC
+    AYoCggGBAN7svtOmLql7GdhPJXMaSPgMLS9y2ceIBve4+kAZWShNg5tabSU7ZQ/T
+    uQcm6rrOluYMaYjs+cwJv4WqF6fqpdDiSxMhDWXe6jSWCF17leyHMYQf/qBWj9+I
+    ybbAZ9ufhNbraE6FmBGmI07HoaZ9SpJ84urS0k1fec2cYfwnKhFw46jJbXD7oriD
+    1ma5RxPbQurte7xw19luaa09/zTu7yfIjWSmjRQWOO4+owbUBFzaioyDWWhvtb9O
+    w1hoy2uDhmIi12J3iNTSSmOD6gXLDpDx4qheAXLd/bSk9G1ckRasblHf0+FZaTXQ
+    zQRlJEUjEPQOJAIlkTQZd3+fZb9+AyWOwmf92P07lukVCpybqaDFMcHU3+RQN4+e
+    CgLNLW6tp3L0kQcUr99pk77OzSg0ON3T7CO9mfwLCmLzvhZRau7pfz4zHaG5UDy+
+    FSxZtN/v5KnMJA9FKxj48kEmgFn/AlNHjsbLBe4TE1A0aXg/ICMNLcwLwapaYjkO
+    S3QNXaQVwwIDAQABo0IwQDAdBgNVHQ4EFgQU7F7ENjvhd3HerrogxoDCnOmzv1ow
     EgYDVR0TAQH/BAgwBgEB/wIBADALBgNVHQ8EBAMCAQYwDQYJKoZIhvcNAQEMBQAD
-    ggGBADbJzJswQA5YnfBr8GyFRFOB4aeAoCQtkk2I1+tHL7GnIoeDV+P7wPFM1F3B
-    3w0pBgGhZW39BwDrBH2pDKkDwWnrhIwtblcHhIRHA9VJVycbJTWPGLanxhyQr15r
-    zchMZNCZ9srvUYArm/hLhi+2xKk4wUEJPFGVb/+9Q6+fv/Y2TFRIUIiDQ3ip3zQP
-    5hYgI07R1hTqTKMNhAt4/RZzaYiI54w8DZsaYGxenHk/y5vUebFwVyio0YNOfCpy
-    DnmHS+1aYwDCy7ltv5krCV+pEtNO+p3NXohCSV3NArf//LxiZlFRG0pizlztAOOv
-    lLeGBWRsOlw0Jtqvq97rRX17/ODQubSN3a2iQQYAvGB+i2FWJKHfEmnA6/WptJ5i
-    NZ95YbgEv9+l4szwGp1ob47AzCid2XPBagc+Am+XTy0n6xfYp/2kdoa5tX3B5PDd
-    9qg9Epw+73JxVDJOkPjj4QEXkei9AcZp6wJAiSc8EWM/EadPwMchj6vMNOjASomu
-    I8AnWg==
+    ggGBADqjJeeMyNw0vVFuZdI5LjFl5H30FkRTyxeZ28X/gn0eScbz0rkB19Ab3EGn
+    PR7Jie1aB6peTj+FVdsRqj5LquS+48WzwppfvbwhrJRx1yF1LSmW/4ARrgbRV1Is
+    duaMdSmNsJBU6M89wnvoPwT0uNBZoI8fbrHlwrcI8pIQ1uZbIqGQUYJEVQocqMbW
+    cRkVbK0Sw/RlRlLHH627u9RLtC/yHz+xiJk4sJWYQPZ3cW7Y81FxJHBA24lsOcqs
+    qeVae6lcuWW07jFiGlE+i8pAAdVH05s9y9cWxX/+SudfPDGy+xeH+k+9sTfnMJIj
+    7XLWlRPwADaPWyAguFH+Vpm0jy8wv0sMXdpDHBVkHuBLUMb/qBF1Lt5Q31q439LT
+    wxQLaOxHMEoZ4uQhnpe9U5m2vex/XFa7nasdv7kia2MR21xewBO4QjwTfXvx2dB/
+    NW/gZKs4XvWU7p8W+5W9yVfWkZj6IW7IUkZjcE1OTNerblp92p9+rIRQ/tAQEn7Y
+    d3Ytkw==
     -----END CERTIFICATE-----
 # Application configuration
 app:
