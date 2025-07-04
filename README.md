@@ -368,11 +368,16 @@ of the deployment, before we deploy it on the cluster.
 But the deployment doesn't work without the oauth applications.
 
 ```bash
-# get the external ip of the consumer
+# get an external ip for the consumer
+# this is an ip of one of our worker nodes
+# you can use any ip of one of the worker nodes
 kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}'
 
-# test the IPin the browser
+# test the IP in the browser
 # http://IP:30000 (for tenant-a)
+# http://IP:30001 (for tenant-b)
+# http://IP:30002 (for tenant-c)
+# http://IP:30003 (for tenant-d)
 
 # 7. Setup OAuth for all tenants
 
@@ -450,9 +455,15 @@ Each tenant requires:
 
 1. **GitHub OAuth Application**
 
+   - **Configuration with DNS**
    - Application Name: `MCCE Tenant X`
    - Homepage URL: `http://example.com:3000X`
    - Callback URL: `http://example.com:3000X/auth/github/callback`
+
+   - **Configuration with IP**
+   - Application Name: `MCCE Tenant X`
+   - Homepage URL: `http://IP:3000X`
+   - Callback URL: `http://IP:3000X/auth/github/callback`
 
 2. **Kubernetes Namespace**
 
@@ -467,16 +478,25 @@ Each tenant requires:
 
 After deployment:
 
+**DNS Config**
+
 - **Tenant A**: http://example.com:30000
 - **Tenant B**: http://example.com:30001
 - **Tenant C**: http://example.com:30002
 - **Tenant D**: http://example.com:30003
 
+**IP Config**
+
+- **Tenant A**: http://IP:30000
+- **Tenant B**: http://IP:30001
+- **Tenant C**: http://IP:30002
+- **Tenant D**: http://IP:30003
+
 ### Adding New Tenants
 
 1. Create tenant directory in `applicationsets/tenants/`
 2. Configure GitHub OAuth application
-3. Run setup scripts for new tenant
+3. Run setup-multi-tenant-oauth.sh
 4. Update ApplicationSet configurations
 5. Push new files to git
 
