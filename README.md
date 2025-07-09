@@ -34,23 +34,25 @@
 
 ## 📋 Table of Contents
 
-- [🎯 Repository Purpose & Role](#repository-purpose--role)
-- [🏗️ 3-Repository Architecture Overview](#3-repository-architecture-overview)
-- [🚀 What This Repository Provides](#what-this-repository-provides)
-- [📁 Repository Structure](#repository-structure)
-- [🛠️ GitOps Components](#gitops-components)
-- [🔧 Setup & Deployment](#setup--deployment)
-- [🔐 Sealed Secrets Integration](#sealed-secrets-integration)
-- [🏢 Multi-Tenant Configuration](#multi-tenant-configuration)
-- [📜 Scripts Documentation](#scripts-documentation)
-- [🛠️ Management Operations](#management-operations)
-- [🔗 Integration with Other Repositories](#integration-with-other-repositories)
-- [📊 Learning Objectives & Course Requirements](#learning-objectives--course-requirements)
-- [🎓 Key Concepts Demonstrated](#key-concepts-demonstrated)
-- [🚨 Troubleshooting Guide](#troubleshooting-guide)
-- [📚 Resources & References](#resources--references)
-- [🎯 Professor's Assessment Guide](#professors-assessment-guide)
-- [🚀 Possible Improvements](#possible-improvements)
+- [🎯 Repository Purpose & Role](#-repository-purpose--role)
+- [🏗️ 3-Repository Architecture Overview](#-3-repository-architecture-overview)
+- [🚀 What This Repository Provides](#-what-this-repository-provides)
+- [📁 Repository Structure](#-repository-structure)
+- [🛠️ GitOps Components](#-gitops-components)
+- [🔧 Setup & Deployment](#-setup--deployment)
+- [🔐 Sealed Secrets Integration](#-sealed-secrets-integration)
+- [🏢 Multi-Tenant Configuration](#-multi-tenant-configuration)
+- [📜 Scripts Documentation](#-scripts-documentation)
+- [🛠️ Management Operations](#-management-operations)
+- [🔗 Integration with Other Repositories](#-integration-with-other-repositories)
+- [🔗 How This Repository Integrates with the Others](#-how-this-repository-integrates-with-the-others)
+- [📊 Learning Objectives & Course Requirements](#-learning-objectives--course-requirements)
+- [🎓 Key Concepts Demonstrated](#-key-concepts-demonstrated)
+- [🚨 Troubleshooting Guide](#-troubleshooting-guide)
+- [📚 Resources & References](#-resources--references)
+- [🎯 Professor's Assessment Guide](#-professors-assessment-guide)
+- [🎯 Summary](#-summary)
+- [🚀 Possible Improvements](#-possible-improvements)
 
 ## 🎯 Repository Purpose & Role
 
@@ -114,6 +116,7 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 ```
 
 ### 🔐 Security Features
+
 > [!TIP]
 > For a smooth workflow, always start with the infrastructure repository, then this repository for GitOps automation. The application code repository will automatically trigger deployments via CI/CD.
 
@@ -164,19 +167,6 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 ✅ **No-click Setup** - Fully automated GitOps deployment  
 ✅ **Kubernetes Deployment** - Production-grade Helm-based deployment  
 ✅ **Security-First Design** - Sealed secrets and namespace isolation
-
-## 📋 Table of Contents
-
-- [📋 Overview](#📋-overview)
-- [📁 Repository Structure](#📁-repository-structure)
-- [🚀 Quick Start](#🚀-quick-start)
-- [🔐 Sealed Secrets Integration](#🔐-sealed-secrets-integration)
-- [🏢 Multi-Tenant Configuration](#🏢-multi-tenant-configuration)
-- [📜 Scripts Documentation](#📜-scripts-documentation)
-- [🛠️ Management Operations](#🛠️-management-operations)
-- [🔍 Troubleshooting](#🔍-troubleshooting)
-- [🔒 Security Considerations](#🔒-security-considerations)
-- [📊 Monitoring and Observability](#📊-monitoring-and-observability)
 
 ## 📁 Repository Structure
 
@@ -540,8 +530,8 @@ Each tenant requires:
 
 After deployment, each tenant will be accessible via dedicated ports:
 
-| Tenant       | URL                        | Port  | Namespace  | OAuth App     |
-| ------------ | -------------------------- | ----- | ---------- | ------------- |
+| Tenant       | URL                      | Port  | Namespace  | OAuth App     |
+| ------------ | ------------------------ | ----- | ---------- | ------------- |
 | **Tenant A** | http://example.com:30000 | 30000 | `tenant-a` | MCCE Tenant A |
 | **Tenant B** | http://example.com:30001 | 30001 | `tenant-b` | MCCE Tenant B |
 | **Tenant C** | http://example.com:30002 | 30002 | `tenant-c` | MCCE Tenant C |
@@ -549,7 +539,6 @@ After deployment, each tenant will be accessible via dedicated ports:
 
 > [!NOTE]
 > Each tenant runs in complete isolation with its own namespace, database schema, and OAuth configuration.
-
 
 ### Adding New Tenants
 
