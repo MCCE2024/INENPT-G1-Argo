@@ -2,7 +2,7 @@ apiVersion: v2
 name: consumer
 description: A Helm chart for the consumer service with GitHub OAuth authentication
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "2.0.0"
 keywords:
   - consumer
@@ -13,5 +13,5 @@ home: https://github.com/MCCE2024/INENPT-G1-Argo
 sources:
   - https://github.com/MCCE2024/INENPT-G1-Argo
 maintainers:
-  - name: Group1
-    email: group1@example.com
+  - name: MCCE Group 1
+    email: mcce.group1@hochschule-burgenland.at
