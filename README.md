@@ -1,6 +1,6 @@
 # INENPT-G1-Argo: GitOps Deployment Repository
 
-04.07.2025
+09.07.2025
 
 > **Part 3 of 3: GitOps Automation** 🎭  
 > This repository contains the **GitOps deployment** and **application lifecycle management** components of our multi-tenant cloud-native application. It's designed to work seamlessly with our [Application Code Repository](https://github.com/MCCE2024/INENPT-G1-Code) and [Infrastructure Repository](https://github.com/MCCE2024/INENPT-G1-K8s) to create a complete GitOps pipeline.
@@ -63,6 +63,8 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 
 ### **In the 3-Repository Strategy**
 
+#### Multi-Tenant Design Overview
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    COMPLETE GITOPS PIPELINE                 │
@@ -78,6 +80,40 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 └─────────────────────────────────────────────────────────────┘
 ```
 
+#### Component Interaction Flow
+
+```
+┌─────────────┐    ┌─────────────┐     ┌─────────────┐
+│   Producer  │───▶│     API     │───▶│  Database   │
+│   Service   │    │   Service   │     │ (Postgres)  │
+│ (CronJob)   │    │ (REST API)  │     │             │
+└─────────────┘    └─────────────┘     └─────────────┘
+                           │
+                           ▼
+                   ┌─────────────┐
+                   │  Consumer   │
+                   │  Service    │
+                   │ (Web UI +   │
+                   │  OAuth)     │
+                   └─────────────┘
+```
+
+#### GitOps Deployment Flow
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   GitHub    │───▶│   ArgoCD    │───▶│ Kubernetes  │
+│ Repository  │    │ Controller  │    │  Cluster    │
+│ (This Repo) │    │             │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘
+       │                   │                   │
+       ▼                   ▼                   ▼
+  Git Changes      Sync Applications    Deploy Workloads
+  Helm Charts      Monitor Health       Update Resources
+  Sealed Secrets   Auto-Healing         Scale Services
+```
+
+### 🔐 Security Features
 > [!TIP]
 > For a smooth workflow, always start with the infrastructure repository, then this repository for GitOps automation. The application code repository will automatically trigger deployments via CI/CD.
 
@@ -128,6 +164,19 @@ This repository serves as the **GitOps deployment engine** for our multi-tenant 
 ✅ **No-click Setup** - Fully automated GitOps deployment  
 ✅ **Kubernetes Deployment** - Production-grade Helm-based deployment  
 ✅ **Security-First Design** - Sealed secrets and namespace isolation
+
+## 📋 Table of Contents
+
+- [📋 Overview](#📋-overview)
+- [📁 Repository Structure](#📁-repository-structure)
+- [🚀 Quick Start](#🚀-quick-start)
+- [🔐 Sealed Secrets Integration](#🔐-sealed-secrets-integration)
+- [🏢 Multi-Tenant Configuration](#🏢-multi-tenant-configuration)
+- [📜 Scripts Documentation](#📜-scripts-documentation)
+- [🛠️ Management Operations](#🛠️-management-operations)
+- [🔍 Troubleshooting](#🔍-troubleshooting)
+- [🔒 Security Considerations](#🔒-security-considerations)
+- [📊 Monitoring and Observability](#📊-monitoring-and-observability)
 
 ## 📁 Repository Structure
 
@@ -283,19 +332,28 @@ spec:
 
 ### **Prerequisites**
 
-- **Kubernetes Cluster** with kubectl access
-- **ArgoCD** installed and configured
-- **Sealed Secrets Controller** deployed
-- **GitHub Account** for OAuth applications
-- **Cloudflare Account** for DNS management (optional)
-- **Exo Account** for cluster deployment and DBaaS
+#### System Requirements
 
-Required CLI tools:
+- **Kubernetes Cluster**: v1.24+ with admin access
+- **Available Resources**: 4 CPU cores, 8GB RAM minimum
+- **Network Access**: Internet connectivity for image pulls
 
-- `kubectl`
-- `kubeseal` (Sealed Secrets CLI)
-- `exo` (Exoscale CLI)
-- `yq` (YAML processor)
+#### Required Services
+
+- **ArgoCD**: Installed and configured on target cluster
+- **Sealed Secrets Controller**: Deployed for secret management
+- **GitHub Account**: For OAuth applications (one per tenant)
+- **Cloudflare Account**: For DNS management (optional)
+- **Exoscale Account**: For cluster deployment and DBaaS
+
+#### Required CLI Tools
+
+| Tool       | Version | Purpose                       | Installation                                                                 |
+| ---------- | ------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| `kubectl`  | 1.24+   | Kubernetes cluster management | [Install Guide](https://kubernetes.io/docs/tasks/tools/)                     |
+| `kubeseal` | 0.18+   | Sealed Secrets CLI            | [Install Guide](https://github.com/bitnami-labs/sealed-secrets#installation) |
+| `exo`      | 1.70+   | Exoscale CLI                  | [Install Guide](https://github.com/exoscale/cli)                             |
+| `yq`       | 4.0+    | YAML processor                | [Install Guide](https://github.com/mikefarah/yq#install)                     |
 
 ### **Step 1: Deploy Infrastructure Components**
 
@@ -462,8 +520,12 @@ Each tenant requires:
 
    - **Configuration with IP**
    - Application Name: `MCCE Tenant X`
-   - Homepage URL: `http://IP:3000X`
-   - Callback URL: `http://IP:3000X/auth/github/callback`
+
+   - Homepage URL: `http://IP:{TENANT_PORT}`
+   - Callback URL: `http://IP:{TENANT_PORT}/auth/github/callback`
+
+   > [!TIP]
+   > Replace `{TENANT_PORT}` with the actual port number: 30000 for Tenant A, 30001 for Tenant B, etc.
 
 2. **Kubernetes Namespace**
 
@@ -476,21 +538,18 @@ Each tenant requires:
 
 ### Tenant Access URLs
 
-After deployment:
+After deployment, each tenant will be accessible via dedicated ports:
 
-**DNS Config**
+| Tenant       | URL                        | Port  | Namespace  | OAuth App     |
+| ------------ | -------------------------- | ----- | ---------- | ------------- |
+| **Tenant A** | http://example.com:30000 | 30000 | `tenant-a` | MCCE Tenant A |
+| **Tenant B** | http://example.com:30001 | 30001 | `tenant-b` | MCCE Tenant B |
+| **Tenant C** | http://example.com:30002 | 30002 | `tenant-c` | MCCE Tenant C |
+| **Tenant D** | http://example.com:30003 | 30003 | `tenant-d` | MCCE Tenant D |
 
-- **Tenant A**: http://example.com:30000
-- **Tenant B**: http://example.com:30001
-- **Tenant C**: http://example.com:30002
-- **Tenant D**: http://example.com:30003
+> [!NOTE]
+> Each tenant runs in complete isolation with its own namespace, database schema, and OAuth configuration.
 
-**IP Config**
-
-- **Tenant A**: http://IP:30000
-- **Tenant B**: http://IP:30001
-- **Tenant C**: http://IP:30002
-- **Tenant D**: http://IP:30003
 
 ### Adding New Tenants
 
@@ -867,6 +926,16 @@ kubectl get events -n argocd --sort-by='.lastTimestamp'
 ---
 
 _This repository is part of a comprehensive 3-repository GitOps strategy demonstrating modern cloud computing principles and production-ready deployment automation._
+
+## 🎯 Summary
+
+This repository provides a complete **production-ready GitOps solution** for multi-tenant applications using ArgoCD, Sealed Secrets, and Kubernetes. Key achievements:
+
+✅ **Secure Multi-Tenancy**: Complete isolation with namespace-based separation  
+✅ **GitOps Workflow**: Declarative configuration with automated deployment  
+✅ **Security-First Design**: Encrypted secrets and OAuth authentication  
+✅ **Scalable Architecture**: Easy tenant addition and management  
+✅ **Comprehensive Documentation**: Complete setup and troubleshooting guides
 
 ## 🚀 Possible Improvements
 
